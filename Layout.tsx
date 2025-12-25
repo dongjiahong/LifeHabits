@@ -23,11 +23,13 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => {
-  const { showToast } = useToast();
+  const { showToast, hideToast } = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleQuickSync = async () => {
     if (isSyncing) return;
+
+    let loadingToastId = '';
 
     try {
       const settings = await db.settings.toArray();
@@ -40,7 +42,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
       }
 
       setIsSyncing(true);
-      showToast('正在同步数据...', 'loading');
+      loadingToastId = showToast('正在同步数据...', 'loading');
 
       const service = new WebDAVService(config);
       const result = await service.sync();
@@ -48,9 +50,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
       // 更新最后同步时间
       await db.settings.update(config.id!, { lastSyncTime: Date.now() });
 
+      if (loadingToastId) hideToast(loadingToastId);
       showToast(result, 'success');
     } catch (e: any) {
       console.error(e);
+      if (loadingToastId) hideToast(loadingToastId);
       showToast(`同步失败: ${e.message}`, 'error');
     } finally {
       setIsSyncing(false);

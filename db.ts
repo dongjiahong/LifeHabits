@@ -66,6 +66,13 @@ class LifeHabitsDatabase extends Dexie {
       });
     });
 
+    // Version 7: Add createdAt index to tasks, logs, reviews for sync
+    (this as any).version(7).stores({
+      tasks: '++id, date, status, isPriority, createdAt',
+      logs: '++id, date, type, createdAt',
+      reviews: '++id, date, createdAt'
+    });
+
     (this as any).on('populate', () => {
       this.templates.bulkAdd([
         {
