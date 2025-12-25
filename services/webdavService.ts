@@ -85,6 +85,7 @@ export class WebDAVService {
 
     // [新增步骤] 3.1 扫描远程目录，发现本地缺失的周
     const remoteFiles = await this.listRemoteFiles(folderUrl);
+
     for (const fileName of remoteFiles) {
         // 文件名格式 data_2024-W01.json
         const match = fileName.match(/data_(\d{4}-W\d+)\.json/);
@@ -173,20 +174,27 @@ export class WebDAVService {
               }
           });
           
-          if (!res.ok) return [];
+          if (!res.ok) {
+              return [];
+          }
 
           const text = await res.text();
           const parser = new DOMParser();
           const xmlDoc = parser.parseFromString(text, "text/xml");
-          // 处理 namespace，通常是 D:href 或 href
-          const responses = xmlDoc.getElementsByTagName("d:response");
-          const filenames: string[] = [];
           
-          // 如果没有 d:response，尝试不带 prefix 的 response (某些 server 实现差异)
-          const nodes = responses.length > 0 ? responses : xmlDoc.getElementsByTagName("response");
+          // 兼容处理不同的命名空间前缀 (D:response, d:response, response)
+          let nodes = xmlDoc.getElementsByTagName("D:response");
+          if (nodes.length === 0) nodes = xmlDoc.getElementsByTagName("d:response");
+          if (nodes.length === 0) nodes = xmlDoc.getElementsByTagName("response");
+
+          const filenames: string[] = [];
 
           for (let i = 0; i < nodes.length; i++) {
-              const hrefNode = nodes[i].getElementsByTagName("d:href")[0] || nodes[i].getElementsByTagName("href")[0];
+              // 同样兼容处理 href 标签
+              let hrefNode = nodes[i].getElementsByTagName("D:href")[0];
+              if (!hrefNode) hrefNode = nodes[i].getElementsByTagName("d:href")[0];
+              if (!hrefNode) hrefNode = nodes[i].getElementsByTagName("href")[0];
+
               if (hrefNode && hrefNode.textContent) {
                   // href 可能是 /dav/life-habits-data/data_xxx.json
                   // 我们需要提取最后的文件名
@@ -195,7 +203,10 @@ export class WebDAVService {
                   // 简单分割取最后一部分
                   const parts = decodedPath.split('/').filter(p => !!p);
                   const name = parts[parts.length - 1];
-                  if (name) filenames.push(name);
+                  // 排除目录本身（通常目录名最后是 data，或者和请求的 folderName 一样）
+                  if (name && name !== 'life-habits-data' && name.endsWith('.json')) {
+                      filenames.push(name);
+                  }
               }
           }
           return filenames;
