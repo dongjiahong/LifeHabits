@@ -23,13 +23,11 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => {
-  const { showToast, hideToast } = useToast();
+  const { showToast } = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleQuickSync = async () => {
     if (isSyncing) return;
-
-    let loadingToastId = '';
 
     try {
       const settings = await db.settings.toArray();
@@ -42,7 +40,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
       }
 
       setIsSyncing(true);
-      loadingToastId = showToast('正在同步数据...', 'loading');
 
       const service = new WebDAVService(config);
       const result = await service.sync();
@@ -50,11 +47,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
       // 更新最后同步时间
       await db.settings.update(config.id!, { lastSyncTime: Date.now() });
 
-      if (loadingToastId) hideToast(loadingToastId);
       showToast(result, 'success');
     } catch (e: any) {
       console.error(e);
-      if (loadingToastId) hideToast(loadingToastId);
       showToast(`同步失败: ${e.message}`, 'error');
     } finally {
       setIsSyncing(false);
@@ -81,19 +76,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
           {/* 设置按钮 */}
           <button 
             onClick={() => onTabChange('settings')}
-            className={`p-2.5 text-slate-500 hover:text-indigo-600 bg-white/50 backdrop-blur-md hover:bg-white/80 rounded-full transition-all shadow-sm border border-white/40 ${
+            className={`p-2 text-slate-500 hover:text-indigo-600 bg-white/50 backdrop-blur-md hover:bg-white/80 rounded-full transition-all shadow-sm border border-white/40 ${
               activeTab === 'settings' ? 'text-indigo-600 bg-white shadow-md' : ''
             }`}
             aria-label="设置"
           >
-            <Settings size={18} />
+            <Settings size={16} />
           </button>
 
           {/* 同步按钮 */}
           <button 
             onClick={handleQuickSync}
             disabled={isSyncing}
-            className={`p-2.5 backdrop-blur-md rounded-full transition-all shadow-sm border border-white/40 ${
+            className={`p-2 backdrop-blur-md rounded-full transition-all shadow-sm border border-white/40 ${
               isSyncing 
                 ? 'bg-indigo-50 text-indigo-500 cursor-not-allowed'
                 : 'bg-white/50 hover:bg-white/80 text-slate-500 hover:text-blue-600'
@@ -101,7 +96,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
             aria-label="同步"
             title="同步数据"
           >
-            {isSyncing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+            {isSyncing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
           </button>
         </div>
 

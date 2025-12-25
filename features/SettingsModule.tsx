@@ -51,7 +51,6 @@ export const SettingsModule: React.FC = () => {
     }
 
     setIsSyncing(true);
-    const toastId = showToast('正在同步数据...', 'loading');
 
     try {
       // 保存当前配置以防万一
