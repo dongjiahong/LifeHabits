@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../db';
 import { AppSettings } from '../types';
 import { Button, Input, Select } from '../components/UIComponents';
-import { Save, AlertCircle, Cloud, RefreshCw, Loader2, Bot, ArrowLeftRight } from 'lucide-react';
+import { Save, AlertCircle, Cloud, RefreshCw, Loader2, Bot, ArrowLeftRight, Trash2 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { WebDAVService } from '../services/webdavService';
+import { purgeDeletedData } from '../db';
 
 export const SettingsModule: React.FC = () => {
   const [config, setConfig] = useState<AppSettings>({
@@ -81,6 +82,17 @@ export const SettingsModule: React.FC = () => {
       showToast(`同步失败: ${e.message}`, 'error');
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handlePurge = async () => {
+    if (confirm('确定要彻底清理本地数据库中已删除的项目吗？\n\n此操作不可逆，清理后将无法通过同步找回在其他设备上误删的内容（如果尚未同步）。建议在确保所有设备都已同步后再执行。')) {
+      try {
+        await purgeDeletedData();
+        showToast('清理完成', 'success');
+      } catch (e) {
+        showToast('清理失败', 'error');
+      }
     }
   };
 
@@ -187,65 +199,87 @@ export const SettingsModule: React.FC = () => {
         )}
 
         {activeTab === 'sync' && (
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-4 animate-fade-in">
-            <div className="flex justify-between items-center mb-3">
-               <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                 <Cloud size={18} className="text-blue-500" /> 
-                 WebDAV 同步
-               </h3>
-               {config.lastSyncTime && (
-                 <span className="text-[10px] text-slate-400">
-                   {new Date(config.lastSyncTime).toLocaleDateString()}
-                 </span>
-               )}
-            </div>
-            
-            <div className="space-y-3">
-              <Input 
-                label="WebDAV URL" 
-                size="sm"
-                placeholder="https://dav.jianguoyun.com/dav/"
-                value={config.webdavUrl || ''} 
-                onChange={e => setConfig({...config, webdavUrl: e.target.value})}
-              />
-              <Input 
-                label="用户名" 
-                size="sm"
-                placeholder="Account / Email"
-                value={config.webdavUsername || ''} 
-                onChange={e => setConfig({...config, webdavUsername: e.target.value})}
-              />
-              <Input 
-                label="密码 / 应用授权码" 
-                size="sm"
-                type="password"
-                placeholder="Password"
-                value={config.webdavPassword || ''} 
-                onChange={e => setConfig({...config, webdavPassword: e.target.value})}
-              />
-              
-              <Button 
-                onClick={handleSync} 
-                variant="secondary"
-                size="sm"
-                disabled={isSyncing || !config.webdavUrl}
-                className={`w-full flex items-center justify-center gap-2 border border-blue-100 mt-2 ${isSyncing ? 'bg-blue-50' : 'bg-blue-50/50 hover:bg-blue-100'}`}
-              >
-                {isSyncing ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin text-blue-600" />
-                    <span className="text-blue-600">正在同步中...</span>
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw size={14} className="text-blue-600" />
-                    <span className="text-blue-600">立即同步</span>
-                  </>
+          <div className="space-y-4 animate-fade-in">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-4">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <Cloud size={18} className="text-blue-500" /> 
+                  WebDAV 同步
+                </h3>
+                {config.lastSyncTime && (
+                  <span className="text-[10px] text-slate-400">
+                    {new Date(config.lastSyncTime).toLocaleDateString()}
+                  </span>
                 )}
-              </Button>
-              <p className="text-[10px] text-slate-400 text-center leading-tight">
-                支持坚果云、Nextcloud 等标准 WebDAV 服务。数据将按周分页加密存储。
+              </div>
+              
+              <div className="space-y-3">
+                <Input 
+                  label="WebDAV URL" 
+                  size="sm"
+                  placeholder="https://dav.jianguoyun.com/dav/"
+                  value={config.webdavUrl || ''} 
+                  onChange={e => setConfig({...config, webdavUrl: e.target.value})}
+                />
+                <Input 
+                  label="用户名" 
+                  size="sm"
+                  placeholder="Account / Email"
+                  value={config.webdavUsername || ''} 
+                  onChange={e => setConfig({...config, webdavUsername: e.target.value})}
+                />
+                <Input 
+                  label="密码 / 应用授权码" 
+                  size="sm"
+                  type="password"
+                  placeholder="Password"
+                  value={config.webdavPassword || ''} 
+                  onChange={e => setConfig({...config, webdavPassword: e.target.value})}
+                />
+                
+                <Button 
+                  onClick={handleSync} 
+                  variant="secondary"
+                  size="sm"
+                  disabled={isSyncing || !config.webdavUrl}
+                  className={`w-full flex items-center justify-center gap-2 border border-blue-100 mt-2 ${isSyncing ? 'bg-blue-50' : 'bg-blue-50/50 hover:bg-blue-100'}`}
+                >
+                  {isSyncing ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin text-blue-600" />
+                      <span className="text-blue-600">正在同步中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw size={14} className="text-blue-600" />
+                      <span className="text-blue-600">立即同步</span>
+                    </>
+                  )}
+                </Button>
+                <p className="text-[10px] text-slate-400 text-center leading-tight">
+                  支持坚果云、Nextcloud 等标准 WebDAV 服务。数据将按模块和时间分片存储。
+                </p>
+              </div>
+            </div>
+
+            {/* 危险区 - 数据清理 */}
+            <div className="bg-rose-50/50 backdrop-blur-xl rounded-2xl shadow-sm border border-rose-100 p-4">
+              <h3 className="text-xs font-bold text-rose-700 mb-2 flex items-center gap-2">
+                <AlertCircle size={14} /> 
+                数据维护 (危险区)
+              </h3>
+              <p className="text-[10px] text-rose-600/70 mb-3 leading-tight">
+                本地执行“软删除”后，数据仍保留在数据库中以支持多端同步。点击下方按钮可彻底清除本地标记为删除的数据。
               </p>
+              <Button 
+                onClick={handlePurge} 
+                variant="danger"
+                size="sm"
+                className="w-full flex items-center justify-center gap-2 bg-rose-100 text-rose-700 hover:bg-rose-200 border-none shadow-none"
+              >
+                <Trash2 size={14} />
+                彻底清理已删除数据
+              </Button>
             </div>
           </div>
         )}

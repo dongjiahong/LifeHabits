@@ -8,6 +8,11 @@ import { Save, History, Plus, Sparkles, ChevronDown, ChevronRight, X, Bot } from
 import ReactMarkdown from 'react-markdown';
 import { generateDailyInsight } from '../services/aiService';
 import { useToast } from '../components/Toast';
+import { addReview, updateReview, getReviewByDate, getReviews, addTemplate, getTemplates } from '../services/reviewService';
+import { getAllLogs } from '../services/accountingService';
+import { getTasks } from '../services/todoService';
+import { getWebDAVService } from '../services/webdavService';
+import { getWeekStr } from '../utils';
 
 export const ReviewModule: React.FC = () => {
   const todayStr = getTodayStr();
@@ -23,9 +28,9 @@ export const ReviewModule: React.FC = () => {
   
   const { showToast, hideToast } = useToast();
 
-  const templates = useLiveQuery(() => db.templates.toArray());
+  const templates = useLiveQuery(() => getTemplates());
   const todayReview = useLiveQuery(
-    () => db.reviews.where('date').equals(todayStr).first(),
+    () => getReviewByDate(todayStr),
     [todayStr]
   );
 
@@ -81,8 +86,10 @@ export const ReviewModule: React.FC = () => {
     // 2. 准备上下文数据 (代办 & 记账)
     let contextData = '';
     try {
-      const tasks = await db.tasks.where('date').equals(todayStr).toArray();
-      const logs = await db.logs.where('date').equals(todayStr).toArray();
+      // Use getTasks from todoService
+      const tasks = await getTasks(todayStr);
+      // Use getAllLogs from service
+      const logs = await getAllLogs(todayStr);
 
       // 代办概况
       const completedTasks = tasks.filter(t => t.status === TaskStatus.COMPLETED);
@@ -139,9 +146,9 @@ export const ReviewModule: React.FC = () => {
 
     try {
       if (todayReview && todayReview.id) {
-        await db.reviews.update(todayReview.id, data);
+        await updateReview(todayReview.id, data);
       } else {
-        await db.reviews.add(data as any);
+        await addReview(data);
       }
     } catch (e) {
       showToast('数据库保存失败', 'error');
@@ -197,8 +204,7 @@ export const ReviewModule: React.FC = () => {
               setActiveTemplateId(tpl.id!);
               if (!todayReview) setAnswers({});
             }}
-            className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
-              activeTemplateId === tpl.id 
+            className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${activeTemplateId === tpl.id 
                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200' 
                 : 'bg-white/60 backdrop-blur-sm border-white/60 text-slate-600 hover:bg-white'
             }`}
@@ -278,7 +284,8 @@ export const ReviewModule: React.FC = () => {
   );
 };
 
-// ... CreateTemplateView 和 HistoryView 保持不变 ...
+// ... CreateTemplateView 和 HistoryView ...
+
 const CreateTemplateView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [name, setName] = useState('');
   const [questions, setQuestions] = useState<string[]>(['']);
@@ -300,7 +307,7 @@ const CreateTemplateView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       showToast("请填写模版名称和所有问题", 'error');
       return;
     }
-    await db.templates.add({
+    await addTemplate({
       name,
       questions: questions.filter(q => q.trim()),
       isDefault: false
@@ -339,19 +346,50 @@ const CreateTemplateView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 };
 
 const HistoryView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const reviews = useLiveQuery(() => db.reviews.orderBy('date').reverse().toArray());
+  const reviews = useLiveQuery(() => getReviews());
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const fetchMoreHistory = async () => {
+    setIsSyncing(true);
+    const service = await getWebDAVService();
+    if (service) {
+      // 尝试拉取过去 12 周的历史数据
+      const today = new Date();
+      for (let i = 1; i <= 12; i++) {
+        const d = new Date();
+        d.setDate(today.getDate() - (i * 7));
+        const weekStr = getWeekStr(d.toISOString().split('T')[0]);
+        await service.lazyDownloadIfNeeded(weekStr);
+      }
+    }
+    setIsSyncing(false);
+  };
 
   return (
     <div className="space-y-4 animate-fade-in pt-2">
-       <div className="flex items-center gap-3 mb-6">
-         <button onClick={onBack} className="p-2 hover:bg-white rounded-full transition-colors">
-            <X size={20} className="text-slate-500" />
+       <div className="flex items-center justify-between mb-6">
+         <div className="flex items-center gap-3">
+            <button onClick={onBack} className="p-2 hover:bg-white rounded-full transition-colors">
+                <X size={20} className="text-slate-500" />
+            </button>
+            <h2 className="text-xl font-bold text-slate-800">历史足迹</h2>
+         </div>
+         <button 
+            onClick={fetchMoreHistory} 
+            disabled={isSyncing}
+            className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg hover:bg-indigo-100 disabled:opacity-50"
+         >
+            {isSyncing ? '同步中...' : '同步更多历史'}
          </button>
-         <h2 className="text-xl font-bold text-slate-800">历史足迹</h2>
        </div>
        <div className="space-y-6">
          {reviews?.map(review => <HistoryCard key={review.id} review={review} />)}
-         {(!reviews || reviews.length === 0) && <div className="text-center py-20 text-slate-400">暂无历史复盘</div>}
+         {(!reviews || reviews.length === 0) && (
+            <div className="text-center py-20 text-slate-400">
+                <p>暂无本地历史复盘</p>
+                <button onClick={fetchMoreHistory} className="mt-2 text-indigo-500 text-xs underline">尝试从云端同步</button>
+            </div>
+         )}
        </div>
     </div>
   );

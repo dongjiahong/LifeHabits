@@ -1,9 +1,7 @@
-
 import React, { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
 import { Habit } from '../types';
-import { calculateHabitUpdate } from '../services/habitService';
+import { calculateHabitUpdate, addHabit, updateHabit, deleteHabit, getHabits, getHabit, addHabitLog, getHabitLogs } from '../services/habitService';
 import { Button, Input, Modal } from '../components/UIComponents';
 import { Plus, Trash2, ChevronLeft, Sprout } from 'lucide-react';
 import { getTodayStr } from '../utils';
@@ -22,14 +20,14 @@ export const HabitModule: React.FC = () => {
   
   const { showToast } = useToast();
 
-  const habits = useLiveQuery(() => db.habits.orderBy('createdAt').toArray());
+  const habits = useLiveQuery(() => getHabits());
 
   const handleCreate = async () => {
     if (!newHabitName.trim()) {
       showToast('请填写习惯名称', 'error');
       return;
     }
-    await db.habits.add({
+    await addHabit({
       name: newHabitName.trim(),
       icon: newHabitIcon,
       greenBeans: 0,
@@ -160,8 +158,8 @@ export const HabitModule: React.FC = () => {
 };
 
 const HabitDetail: React.FC<{ id: number; onBack: () => void }> = ({ id, onBack }) => {
-  const habit = useLiveQuery(() => db.habits.get(id), [id]);
-  const logs = useLiveQuery(() => db.habitLogs.where('habitId').equals(id).sortBy('createdAt'), [id]);
+  const habit = useLiveQuery(() => getHabit(id), [id]);
+  const logs = useLiveQuery(() => getHabitLogs(id), [id]);
   const { showToast } = useToast();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -176,8 +174,8 @@ const HabitDetail: React.FC<{ id: number; onBack: () => void }> = ({ id, onBack 
       isArchived: updatedHabit.isArchived
     };
 
-    await db.habits.update(id, changes);
-    await db.habitLogs.add({
+    await updateHabit(id, changes);
+    await addHabitLog({
       habitId: id,
       type,
       date: getTodayStr(),
@@ -189,8 +187,8 @@ const HabitDetail: React.FC<{ id: number; onBack: () => void }> = ({ id, onBack 
 
   const confirmDelete = async () => {
      try {
-       await db.habits.delete(id);
-       await db.habitLogs.where('habitId').equals(id).delete();
+       await deleteHabit(id);
+       // Soft delete handles synchronization. Logs are implicitly orphaned/deleted.
        setShowDeleteModal(false);
        onBack();
        showToast('习惯已移除', 'info');

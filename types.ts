@@ -1,4 +1,3 @@
-
 export enum TaskStatus {
   PENDING = 0,
   COMPLETED = 1,
@@ -11,6 +10,8 @@ export interface Task {
   date: string; // YYYY-MM-DD
   isPriority: boolean; // 是否为最重要的5件事之一
   createdAt: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
 }
 
 export enum LogType {
@@ -25,6 +26,8 @@ export interface AccountLog {
   value: number; // 分钟数 或 金额
   date: string;
   createdAt: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
 }
 
 export interface ReviewTemplate {
@@ -32,6 +35,9 @@ export interface ReviewTemplate {
   name: string;
   questions: string[]; // 问题数组
   isDefault?: boolean;
+  createdAt?: number; // Add createdAt if missing, seemingly missing in original
+  updatedAt?: number;
+  isDeleted?: boolean;
 }
 
 export interface Review {
@@ -42,6 +48,8 @@ export interface Review {
   answers: { question: string; answer: string }[]; // 问题和答案的键值对，替代原来的固定字段
   aiSummary?: string; // AI 生成的总结
   createdAt: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
   
   // 兼容旧数据字段 (可选)
   done?: string;
@@ -49,6 +57,7 @@ export interface Review {
   solutions?: string;
   insights?: string;
   otherNotes?: string;
+  // Make these optional as they are legacy
 }
 
 export interface AppSettings {
@@ -79,6 +88,8 @@ export interface Habit {
   redBeans: number; // 失败次数
   isArchived: boolean; // 是否已养成/归档
   createdAt: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
 }
 
 export interface HabitLog {
@@ -87,6 +98,8 @@ export interface HabitLog {
   type: 'green' | 'red';
   date: string;
   createdAt: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
 }
 
 export type TabView = 'todo' | 'accounting' | 'review' | 'habits' | 'settings';

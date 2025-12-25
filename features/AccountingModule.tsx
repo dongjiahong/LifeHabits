@@ -1,28 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
 import { LogType, AccountLog } from '../types';
-import { getTodayStr, formatCurrency, formatDuration } from '../utils';
-import { calculateTotal, formatChartData } from '../services/accountingService';
+import { getTodayStr, formatCurrency, formatDuration, getWeekStr } from '../utils';
+import { calculateTotal, formatChartData, addLog, updateLog, deleteLog, getLogs } from '../services/accountingService';
 import { Button, Input } from '../components/UIComponents';
-import { Clock, DollarSign, TrendingUp, Edit2, Trash2, X } from 'lucide-react';
+import { Clock, DollarSign, TrendingUp, Edit2, Trash2, X, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useToast } from '../components/Toast';
+import { getWebDAVService } from '../services/webdavService';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export const AccountingModule: React.FC = () => {
   const [activeTab, setActiveTab] = useState<LogType>(LogType.TIME);
+  const [targetDate, setTargetDate] = useState(getTodayStr());
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
   const { showToast } = useToast();
 
   const todayStr = getTodayStr();
+  
+  // Use service for data fetching
   const logs = useLiveQuery(
-    () => db.logs.where('date').equals(todayStr).and(l => l.type === activeTab).toArray(),
-    [todayStr, activeTab]
+    () => getLogs(targetDate, activeTab),
+    [targetDate, activeTab]
   );
+
+  // Lazy Download Trigger
+  useEffect(() => {
+    const triggerLazySync = async () => {
+      const weekStr = getWeekStr(targetDate);
+      const currentWeek = getWeekStr(todayStr);
+      
+      // If looking at past weeks, try to fetch from cloud
+      if (weekStr !== currentWeek) {
+        const service = await getWebDAVService();
+        if (service) {
+          try {
+            await service.lazyDownloadIfNeeded(weekStr);
+          } catch (e) {
+            console.warn("Lazy sync failed", e);
+          }
+        }
+      }
+    };
+    triggerLazySync();
+  }, [targetDate, todayStr]);
+
+  const changeDate = (days: number) => {
+    const date = new Date(targetDate);
+    date.setDate(date.getDate() + days);
+    setTargetDate(date.toISOString().split('T')[0]);
+    cancelEdit();
+  };
 
   const handleSave = async () => {
     if (!name.trim() || !value) return;
@@ -34,15 +65,15 @@ export const AccountingModule: React.FC = () => {
 
     try {
         if (editingId) {
-            await db.logs.update(editingId, { name: name.trim(), value: numValue });
+            await updateLog(editingId, { name: name.trim(), value: numValue });
             setEditingId(null);
             showToast('更新成功', 'success');
         } else {
-            await db.logs.add({
+            await addLog({
                 type: activeTab,
                 name: name.trim(),
                 value: numValue,
-                date: todayStr,
+                date: targetDate,
                 createdAt: Date.now(),
             });
             showToast('记录已添加', 'success');
@@ -50,6 +81,7 @@ export const AccountingModule: React.FC = () => {
         setName('');
         setValue('');
     } catch (e) {
+        console.error(e);
         showToast('保存失败', 'error');
     }
   };
@@ -61,9 +93,9 @@ export const AccountingModule: React.FC = () => {
   };
   const cancelEdit = () => { setEditingId(null); setName(''); setValue(''); };
 
-  const deleteLog = async (id: number) => {
+  const handleDelete = async (id: number) => {
     if (confirm('确定要删除这条记录吗？')) {
-      await db.logs.delete(id);
+      await deleteLog(id);
       if (editingId === id) cancelEdit();
       showToast('已删除', 'info');
     }
@@ -74,6 +106,25 @@ export const AccountingModule: React.FC = () => {
 
   return (
     <div className="space-y-3 pt-1 animate-fade-in">
+      {/* 0. 日期切换器 */}
+      <div className="flex items-center justify-between bg-white/50 backdrop-blur rounded-xl px-2 py-1.5 border border-white/60 shadow-sm mx-auto max-w-[280px]">
+        <button onClick={() => changeDate(-1)} className="p-1 text-slate-400 hover:text-indigo-600 transition-colors">
+          <ChevronLeft size={18} />
+        </button>
+        <div className="flex items-center gap-2">
+          <Calendar size={14} className="text-indigo-500" />
+          <span className="text-xs font-bold text-slate-700">
+            {targetDate === todayStr ? '今天' : targetDate}
+          </span>
+          {targetDate !== todayStr && (
+            <button onClick={() => setTargetDate(todayStr)} className="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-1.5 py-0.5 rounded-md">回今天</button>
+          )}
+        </div>
+        <button onClick={() => changeDate(1)} className="p-1 text-slate-400 hover:text-indigo-600 transition-colors">
+          <ChevronRight size={18} />
+        </button>
+      </div>
+
       {/* 1. 头部切换 - 极简紧凑 */}
       <div className="flex bg-slate-200/60 p-1 rounded-xl mx-auto max-w-[240px] backdrop-blur-sm">
         <button
@@ -99,7 +150,7 @@ export const AccountingModule: React.FC = () => {
       {/* 2. 统计卡片 - 并排紧凑 */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-white/70 backdrop-blur rounded-xl p-3 border border-white/60 flex flex-col items-center justify-center shadow-sm">
-           <span className="text-slate-500 text-[10px] mb-0.5">今日累计</span>
+           <span className="text-slate-500 text-[10px] mb-0.5">{targetDate === todayStr ? '今日' : '当日'}累计</span>
            <span className={`text-lg font-bold ${activeTab === LogType.TIME ? 'text-indigo-600' : 'text-emerald-600'}`}>
              {activeTab === LogType.TIME ? formatDuration(totalValue) : formatCurrency(totalValue)}
            </span>
@@ -181,7 +232,7 @@ export const AccountingModule: React.FC = () => {
                       </span>
                       <div className="flex gap-1">
                         <button onClick={() => startEdit(log)} className="text-slate-300 hover:text-indigo-500 p-0.5"><Edit2 size={12} /></button>
-                        <button onClick={() => deleteLog(log.id!)} className="text-slate-300 hover:text-red-500 p-0.5"><Trash2 size={12} /></button>
+                        <button onClick={() => handleDelete(log.id!)} className="text-slate-300 hover:text-red-500 p-0.5"><Trash2 size={12} /></button>
                       </div>
                     </div>
                  </div>

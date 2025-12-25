@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
 import { Task, TaskStatus } from '../types';
 import { getTodayStr, getTomorrowStr } from '../utils';
-import { Button, Input, Card } from '../components/UIComponents';
+import { Button, Input } from '../components/UIComponents';
 import { Plus, Check, Trash2, Calendar, Moon, Star, Flame, Circle } from 'lucide-react';
+import { addTask, updateTask, deleteTask, getTasks } from '../services/todoService';
 
 export const TodoModule: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'today' | 'tomorrow'>('today');
@@ -13,7 +13,7 @@ export const TodoModule: React.FC = () => {
   const currentDateStr = activeTab === 'today' ? getTodayStr() : getTomorrowStr();
 
   const tasks = useLiveQuery(
-    () => db.tasks.where('date').equals(currentDateStr).toArray(),
+    () => getTasks(currentDateStr),
     [currentDateStr]
   );
 
@@ -21,13 +21,13 @@ export const TodoModule: React.FC = () => {
   const priorityTasks = tasks?.filter(t => t.isPriority) || [];
   const otherTasks = tasks?.filter(t => !t.isPriority) || [];
 
-  const addTask = async () => {
+  const handleAddTask = async () => {
     if (!newTask.trim()) return;
     
     // 默认如果重要任务少于5个，则自动设为重要，否则进入普通池
     const isPriority = priorityTasks.length < 5;
 
-    await db.tasks.add({
+    await addTask({
       title: newTask.trim(),
       status: TaskStatus.PENDING,
       date: currentDateStr,
@@ -39,7 +39,7 @@ export const TodoModule: React.FC = () => {
 
   const toggleTaskStatus = async (task: Task) => {
     if (!task.id) return;
-    await db.tasks.update(task.id, {
+    await updateTask(task.id, {
       status: task.status === TaskStatus.PENDING ? TaskStatus.COMPLETED : TaskStatus.PENDING
     });
   };
@@ -49,17 +49,17 @@ export const TodoModule: React.FC = () => {
     
     // 如果要升级为重要任务，检查是否已满5个
     if (!task.isPriority && priorityTasks.length >= 5) {
-      alert("🔥 贪多嚼不烂！每天最重要的事建议不超过 5 件。\n请先完成或移除一件重要任务。");
+      alert("🔥 贪多嚼不烂！每天最重要的事建议不超过 5 件.\n请先完成或移除一件重要任务。");
       return;
     }
 
-    await db.tasks.update(task.id, {
+    await updateTask(task.id, {
       isPriority: !task.isPriority
     });
   };
 
-  const deleteTask = async (id?: number) => {
-    if (id) await db.tasks.delete(id);
+  const handleDeleteTask = async (id?: number) => {
+    if (id) await deleteTask(id);
   };
 
   const totalTasks = tasks?.length || 0;
@@ -73,18 +73,14 @@ export const TodoModule: React.FC = () => {
         <div className="flex bg-slate-100 p-1 rounded-full mx-auto shadow-inner">
           <button
             onClick={() => setActiveTab('today')}
-            className={`flex items-center px-4 py-1.5 text-xs font-bold rounded-full transition-all ${
-              activeTab === 'today' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'
-            }`}
+            className={`flex items-center px-4 py-1.5 text-xs font-bold rounded-full transition-all ${activeTab === 'today' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
           >
             <Calendar size={14} className="mr-1.5" />
             今日执行
           </button>
           <button
             onClick={() => setActiveTab('tomorrow')}
-            className={`flex items-center px-4 py-1.5 text-xs font-bold rounded-full transition-all ${
-              activeTab === 'tomorrow' ? 'bg-white text-purple-600 shadow-sm' : 'text-slate-500'
-            }`}
+            className={`flex items-center px-4 py-1.5 text-xs font-bold rounded-full transition-all ${activeTab === 'tomorrow' ? 'bg-white text-purple-600 shadow-sm' : 'text-slate-500'}`}
           >
             <Moon size={14} className="mr-1.5" />
             明日规划
@@ -112,11 +108,11 @@ export const TodoModule: React.FC = () => {
           placeholder={activeTab === 'today' ? "新增什么任务？" : "规划明天..."}
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addTask()}
+          onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
           className="w-full h-14 pl-5 pr-14 rounded-2xl bg-white shadow-lg shadow-indigo-100 border-none outline-none text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-200 transition-all"
         />
         <button 
-          onClick={addTask} 
+          onClick={handleAddTask} 
           disabled={!newTask.trim()}
           className="absolute right-2 top-2 bottom-2 w-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center transition-colors disabled:opacity-50 disabled:bg-slate-300"
         >
@@ -145,7 +141,7 @@ export const TodoModule: React.FC = () => {
               task={task} 
               onToggleStatus={() => toggleTaskStatus(task)}
               onTogglePriority={() => togglePriority(task)}
-              onDelete={() => deleteTask(task.id)}
+              onDelete={() => handleDeleteTask(task.id)}
               isPriorityList={true}
             />
           ))
@@ -169,7 +165,7 @@ export const TodoModule: React.FC = () => {
             task={task} 
             onToggleStatus={() => toggleTaskStatus(task)}
             onTogglePriority={() => togglePriority(task)}
-            onDelete={() => deleteTask(task.id)}
+            onDelete={() => handleDeleteTask(task.id)}
             isPriorityList={false}
           />
         ))}
@@ -187,25 +183,17 @@ const TaskItem: React.FC<{
   isPriorityList: boolean;
 }> = ({ task, onToggleStatus, onTogglePriority, onDelete, isPriorityList }) => {
   return (
-    <div className={`group flex items-center p-3.5 bg-white rounded-xl transition-all duration-300 ${
-      task.status === TaskStatus.COMPLETED ? 'opacity-60 bg-slate-50' : 'shadow-sm shadow-indigo-100 hover:shadow-md'
-    }`}>
+    <div className={`group flex items-center p-3.5 bg-white rounded-xl transition-all duration-300 ${task.status === TaskStatus.COMPLETED ? 'opacity-60 bg-slate-50' : 'shadow-sm shadow-indigo-100 hover:shadow-md'}`}>
       {/* 勾选框 */}
       <button
         onClick={onToggleStatus}
-        className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center mr-3 transition-colors ${
-          task.status === TaskStatus.COMPLETED
-            ? 'bg-indigo-500 border-indigo-500 text-white'
-            : 'border-slate-300 text-transparent hover:border-indigo-300'
-        }`}
+        className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center mr-3 transition-colors ${task.status === TaskStatus.COMPLETED ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-slate-300 text-transparent hover:border-indigo-300'}`}
       >
         <Check size={14} strokeWidth={3} />
       </button>
       
       {/* 标题 */}
-      <span className={`flex-1 text-sm font-medium transition-all ${
-        task.status === TaskStatus.COMPLETED ? 'text-slate-400 line-through' : 'text-slate-800'
-      }`}>
+      <span className={`flex-1 text-sm font-medium transition-all ${task.status === TaskStatus.COMPLETED ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
         {task.title}
       </span>
 
@@ -213,9 +201,7 @@ const TaskItem: React.FC<{
       <div className="flex items-center gap-1">
         <button 
           onClick={onTogglePriority}
-          className={`p-2 rounded-lg transition-colors ${
-            task.isPriority ? 'text-orange-400 hover:bg-orange-50' : 'text-slate-300 hover:text-orange-400'
-          }`}
+          className={`p-2 rounded-lg transition-colors ${task.isPriority ? 'text-orange-400 hover:bg-orange-50' : 'text-slate-300 hover:text-orange-400'}`}
         >
           {task.isPriority ? <Star size={18} fill="currentColor" /> : <Star size={18} />}
         </button>
