@@ -55,19 +55,13 @@ export class WebDAVService {
     const tasks = await db.tasks.toArray();
     const logs = await db.logs.toArray();
     const reviews = await db.reviews.toArray();
-    const habits = await db.habits.toArray();      // 获取习惯
-    const habitLogs = await db.habitLogs.toArray(); // 获取习惯日志
+    const habits = await db.habits.toArray();
+    const habitLogs = await db.habitLogs.toArray();
 
     // 3. 按周分组数据 (key: "2024-W10")
-    // 注意：Habit 本身不属于某一周（它是长期存在的），但为了同步机制统一，我们将 Habit 总是放入 "meta" 或者当前周，
-    // 这里采取策略：Habit 对象总是放入 "current" 或者所有周文件都带上全量 Habit（因为量不大）。
-    // 为了更合理的增量，我们将 Habit 视为 "GLOBAL" 对象，放入特定的 'global_habits.json' 或者简单地按创建时间分周。
-    // 简化策略：Habit 按创建时间分周，HabitLog 按记录时间分周。
-    
     const groupedData = new Map<string, SyncData>();
 
     const getGroupKey = (dateStr: string | number) => {
-        // 如果是时间戳 (Habit.createdAt)
         if (typeof dateStr === 'number') {
             const d = new Date(dateStr);
             const iso = d.toISOString().split('T')[0];
@@ -88,6 +82,20 @@ export class WebDAVService {
     reviews.forEach(r => addToGroup(getGroupKey(r.date), r, 'reviews'));
     habits.forEach(h => addToGroup(getGroupKey(h.createdAt), h, 'habits'));
     habitLogs.forEach(hl => addToGroup(getGroupKey(hl.date), hl, 'habitLogs'));
+
+    // [新增步骤] 3.1 扫描远程目录，发现本地缺失的周
+    const remoteFiles = await this.listRemoteFiles(folderUrl);
+    for (const fileName of remoteFiles) {
+        // 文件名格式 data_2024-W01.json
+        const match = fileName.match(/data_(\d{4}-W\d+)\.json/);
+        if (match) {
+            const weekStr = match[1];
+            if (!groupedData.has(weekStr)) {
+                // 如果本地没有这一周的数据，也初始化一个空对象，以便进入循环下载流程
+                groupedData.set(weekStr, { tasks: [], logs: [], reviews: [], habits: [], habitLogs: [] });
+            }
+        }
+    }
 
     let syncedWeeks = 0;
 
@@ -119,7 +127,9 @@ export class WebDAVService {
       // 4.2 合并数据
       const mergedData = this.mergeData(localData, remoteData);
 
-      // 4.3 上传合并后的数据
+      // 4.3 上传合并后的数据 (仅当有数据时，或者为了覆盖旧的空文件？ 这里简单起见总是上传)
+      // 优化：如果 mergedData 和 remoteData 一样（即本地为空且没变化），其实可以不传，
+      // 但为了保证数据一致性（比如时间戳更新），还是上传比较稳妥。
       await fetch(fileUrl, {
         method: 'PUT',
         headers: { 
@@ -150,6 +160,49 @@ export class WebDAVService {
         headers: { 'Authorization': this.authHeader }
       });
     }
+  }
+
+  // [新增] 列出远程目录文件
+  private async listRemoteFiles(folderUrl: string): Promise<string[]> {
+      try {
+          const res = await fetch(folderUrl, {
+              method: 'PROPFIND',
+              headers: { 
+                  'Authorization': this.authHeader,
+                  'Depth': '1' 
+              }
+          });
+          
+          if (!res.ok) return [];
+
+          const text = await res.text();
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(text, "text/xml");
+          // 处理 namespace，通常是 D:href 或 href
+          const responses = xmlDoc.getElementsByTagName("d:response");
+          const filenames: string[] = [];
+          
+          // 如果没有 d:response，尝试不带 prefix 的 response (某些 server 实现差异)
+          const nodes = responses.length > 0 ? responses : xmlDoc.getElementsByTagName("response");
+
+          for (let i = 0; i < nodes.length; i++) {
+              const hrefNode = nodes[i].getElementsByTagName("d:href")[0] || nodes[i].getElementsByTagName("href")[0];
+              if (hrefNode && hrefNode.textContent) {
+                  // href 可能是 /dav/life-habits-data/data_xxx.json
+                  // 我们需要提取最后的文件名
+                  const rawPath = hrefNode.textContent;
+                  const decodedPath = decodeURIComponent(rawPath);
+                  // 简单分割取最后一部分
+                  const parts = decodedPath.split('/').filter(p => !!p);
+                  const name = parts[parts.length - 1];
+                  if (name) filenames.push(name);
+              }
+          }
+          return filenames;
+      } catch (e) {
+          console.warn("Failed to list remote files", e);
+          return [];
+      }
   }
 
   private mergeData(local: SyncData, remote: SyncData): SyncData {
