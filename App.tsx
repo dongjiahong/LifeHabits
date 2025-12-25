@@ -4,8 +4,9 @@ import { TodoModule } from './features/TodoModule';
 import { AccountingModule } from './features/AccountingModule';
 import { ReviewModule } from './features/ReviewModule';
 import { SettingsModule } from './features/SettingsModule';
+import { HabitModule } from './features/HabitModule';
 import { TabView } from './types';
-import { ToastProvider } from './components/Toast.tsx';
+import { ToastProvider } from './components/Toast';
 
 const AppContent: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<TabView>('todo');
@@ -18,6 +19,8 @@ const AppContent: React.FC = () => {
         return <AccountingModule />;
       case 'review':
         return <ReviewModule />;
+      case 'habits':
+        return <HabitModule />;
       case 'settings':
         return <SettingsModule />;
       default:

@@ -71,4 +71,22 @@ export interface AppSettings {
   lastSyncTime?: number;
 }
 
-export type TabView = 'todo' | 'accounting' | 'review' | 'settings';
+export interface Habit {
+  id?: number;
+  name: string;
+  icon: string; // Emoji
+  greenBeans: number; // 成功次数
+  redBeans: number; // 失败次数
+  isArchived: boolean; // 是否已养成/归档
+  createdAt: number;
+}
+
+export interface HabitLog {
+  id?: number;
+  habitId: number;
+  type: 'green' | 'red';
+  date: string;
+  createdAt: number;
+}
+
+export type TabView = 'todo' | 'accounting' | 'review' | 'habits' | 'settings';

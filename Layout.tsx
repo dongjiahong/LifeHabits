@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
 import { TabView } from './types';
-import { CheckSquare, PieChart, BookOpen, Settings, RefreshCw, Loader2 } from 'lucide-react';
+import { CheckSquare, PieChart, BookOpen, Settings, RefreshCw, Loader2, Sprout } from 'lucide-react';
 import { useToast } from './components/Toast';
 import { db } from './db';
 import { WebDAVService } from './services/webdavService';
+
+// App Logo Component
+const AppLogo = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-indigo-600">
+    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" className="opacity-20"/>
+    <path d="M12 18V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M12 12L8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M12 12L16 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    <circle cx="12" cy="12" r="3" fill="currentColor" className="opacity-20"/>
+  </svg>
+);
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -54,8 +65,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[30%] bg-purple-300/30 blur-3xl rounded-full pointer-events-none z-0" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[30%] bg-indigo-300/30 blur-3xl rounded-full pointer-events-none z-0" />
 
-        {/* 左上角功能区 (设置 & 同步) */}
+        {/* 左上角功能区 (设置 & 同步 & Logo) */}
         <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
+          {/* Logo 放在最左侧作为品牌标识 */}
+          <div className="bg-white/60 p-2 rounded-full backdrop-blur-md shadow-sm border border-white/40">
+            <AppLogo />
+          </div>
+
+          <div className="h-6 w-[1px] bg-slate-400/20 mx-1"></div>
+
           {/* 设置按钮 */}
           <button 
             onClick={() => onTabChange('settings')}
@@ -64,7 +82,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
             }`}
             aria-label="设置"
           >
-            <Settings size={20} />
+            <Settings size={18} />
           </button>
 
           {/* 同步按钮 */}
@@ -79,12 +97,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
             aria-label="同步"
             title="同步数据"
           >
-            {isSyncing ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
+            {isSyncing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
           </button>
         </div>
 
         {/* 主内容区域 */}
-        <main className="flex-1 overflow-y-auto p-4 pt-16 pb-2 no-scrollbar z-10 scroll-smooth">
+        <main className="flex-1 overflow-y-auto p-4 pt-20 pb-2 no-scrollbar z-10 scroll-smooth">
           {children}
         </main>
 
@@ -96,6 +114,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
               onClick={() => onTabChange('todo')} 
               icon={<CheckSquare size={20} />} 
               label="清单" 
+            />
+             <NavButton 
+              active={activeTab === 'habits'} 
+              onClick={() => onTabChange('habits')} 
+              icon={<Sprout size={20} />} 
+              label="习惯" 
             />
             <NavButton 
               active={activeTab === 'accounting'} 
@@ -131,7 +155,6 @@ const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.Re
     <div className={`p-1.5 rounded-xl transition-all duration-300 ${active ? 'bg-indigo-50 scale-110' : 'group-hover:bg-white/50'}`}>
       {icon}
     </div>
-    {/* 仅在激活时显示的微型标签，或者完全不显示标签以求极致精简，这里保留激活态显示 */}
     <span className={`text-[9px] font-bold transition-all duration-300 ${active ? 'opacity-100 translate-y-0 h-auto' : 'opacity-0 -translate-y-2 h-0 overflow-hidden'}`}>
       {label}
     </span>

@@ -1,5 +1,6 @@
+
 import Dexie, { Table } from 'dexie';
-import { Task, AccountLog, Review, ReviewTemplate, AppSettings } from './types';
+import { Task, AccountLog, Review, ReviewTemplate, AppSettings, Habit, HabitLog } from './types';
 
 class LifeHabitsDatabase extends Dexie {
   tasks!: Table<Task, number>;
@@ -7,6 +8,8 @@ class LifeHabitsDatabase extends Dexie {
   reviews!: Table<Review, number>;
   templates!: Table<ReviewTemplate, number>;
   settings!: Table<AppSettings, number>;
+  habits!: Table<Habit, number>;
+  habitLogs!: Table<HabitLog, number>;
 
   constructor() {
     super('LifeHabitsDB');
@@ -33,6 +36,34 @@ class LifeHabitsDatabase extends Dexie {
       reviews: '++id, date',
       templates: '++id, &name',
       settings: '++id'
+    });
+
+    // Version 4: Add habits
+    (this as any).version(4).stores({
+      tasks: '++id, date, status, isPriority',
+      logs: '++id, date, type',
+      reviews: '++id, date',
+      templates: '++id, &name',
+      settings: '++id',
+      habits: '++id, isArchived',
+      habitLogs: '++id, habitId, date'
+    });
+
+    // Version 5: Add createdAt index to habits for sorting
+    (this as any).version(5).stores({
+      habits: '++id, isArchived, createdAt'
+    });
+
+    // Version 6: Add createdAt index to habitLogs for sync
+    (this as any).version(6).stores({
+      habitLogs: '++id, habitId, date, createdAt'
+    }).upgrade((trans: any) => {
+      return trans.table('habitLogs').toCollection().modify((log: any) => {
+         if (log.timestamp && !log.createdAt) {
+             log.createdAt = log.timestamp;
+             delete log.timestamp;
+         }
+      });
     });
 
     (this as any).on('populate', () => {
