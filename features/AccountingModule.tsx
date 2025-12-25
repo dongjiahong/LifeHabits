@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { LogType, AccountLog } from '../types';
 import { getTodayStr, formatCurrency, formatDuration } from '../utils';
+import { calculateTotal, formatChartData } from '../services/accountingService';
 import { Button, Input } from '../components/UIComponents';
 import { Clock, DollarSign, TrendingUp, Edit2, Trash2, X } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -68,8 +69,8 @@ export const AccountingModule: React.FC = () => {
     }
   };
 
-  const totalValue = logs?.reduce((sum, item) => sum + item.value, 0) || 0;
-  const chartData = logs?.map(log => ({ name: log.name, value: log.value }));
+  const totalValue = calculateTotal(logs);
+  const chartData = formatChartData(logs);
 
   return (
     <div className="space-y-3 pt-1 animate-fade-in">

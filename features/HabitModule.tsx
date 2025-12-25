@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { Habit } from '../types';
+import { calculateHabitUpdate } from '../services/habitService';
 import { Button, Input, Modal } from '../components/UIComponents';
 import { Plus, Trash2, ChevronLeft, Sprout } from 'lucide-react';
 import { getTodayStr } from '../utils';
@@ -167,22 +168,13 @@ const HabitDetail: React.FC<{ id: number; onBack: () => void }> = ({ id, onBack 
   const updateBeans = async (type: 'green' | 'red') => {
     if (!habit) return;
 
-    const changes: Partial<Habit> = {};
-    let msg = '';
-    
-    if (type === 'green') {
-       const newCount = habit.greenBeans + 1;
-       changes.greenBeans = newCount;
-       msg = '保持得不错！+1 绿豆 🟢';
-       
-       if (newCount >= 100 && !habit.isArchived) {
-         changes.isArchived = true;
-         msg = '🎉 太棒了！习惯养成达成！';
-       }
-    } else {
-       changes.redBeans = habit.redBeans + 1;
-       msg = '没关系，下次加油！+1 红豆 🔴';
-    }
+    const { habit: updatedHabit, message } = calculateHabitUpdate(habit, type);
+
+    const changes: Partial<Habit> = {
+      greenBeans: updatedHabit.greenBeans,
+      redBeans: updatedHabit.redBeans,
+      isArchived: updatedHabit.isArchived
+    };
 
     await db.habits.update(id, changes);
     await db.habitLogs.add({
@@ -192,7 +184,7 @@ const HabitDetail: React.FC<{ id: number; onBack: () => void }> = ({ id, onBack 
       createdAt: Date.now()
     });
     
-    showToast(msg, type === 'green' ? 'success' : 'info');
+    showToast(message, type === 'green' ? 'success' : 'info');
   };
 
   const confirmDelete = async () => {
