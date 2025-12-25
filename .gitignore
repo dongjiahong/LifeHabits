@@ -1,6 +1,7 @@
 # Logs
 package-lock.json
 coverage/
+.gemini-clipboard/
 logs
 *.log
 npm-debug.log*

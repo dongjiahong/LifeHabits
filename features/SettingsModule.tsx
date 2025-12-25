@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../db';
 import { AppSettings } from '../types';
-import { Button, Input } from '../components/UIComponents';
-import { Save, AlertCircle, Cloud, RefreshCw, Check, Loader2 } from 'lucide-react';
+import { Button, Input, Select } from '../components/UIComponents';
+import { Save, AlertCircle, Cloud, RefreshCw, Loader2, Bot, ArrowLeftRight } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { WebDAVService } from '../services/webdavService';
 
@@ -19,6 +19,7 @@ export const SettingsModule: React.FC = () => {
     webdavPassword: ''
   });
   const [isSyncing, setIsSyncing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'ai' | 'sync'>('ai');
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -81,155 +82,179 @@ export const SettingsModule: React.FC = () => {
       showToast(`同步失败: ${e.message}`, 'error');
     } finally {
       setIsSyncing(false);
-      // 强制关闭 loading toast (虽然 showToast 会自动关闭非 loading，但 loading 需要手动)
-      // 这里依赖 Toast 组件的内部逻辑，如果 Toast 组件 loading 不自动关，需要 hideToast(toastId)
-      // 假设 Toast 组件在 showToast 新消息时会处理
     }
   };
 
   return (
-    <div className="space-y-6 pt-2 animate-fade-in">
-      <div className="flex items-center gap-2 mb-2 pl-2">
-        <h2 className="text-2xl font-bold text-slate-800">设置</h2>
+    <div className="space-y-4 pt-2 animate-fade-in flex flex-col h-full">
+      <div className="flex items-center gap-2 mb-1 pl-2">
+        <h2 className="text-xl font-bold text-slate-800">设置</h2>
       </div>
 
-      {/* AI 设置 */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-5">
-        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-          <span>🧠</span> AI 助手配置
-        </h3>
-        <div className="flex gap-2 mb-6 bg-slate-100/50 p-1 rounded-xl">
-          <button
-            onClick={() => setConfig({ ...config, aiProvider: 'gemini' })}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-              config.aiProvider === 'gemini' 
-                ? 'bg-white text-indigo-600 shadow-sm' 
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            Google Gemini
-          </button>
-          <button
-            onClick={() => setConfig({ ...config, aiProvider: 'openai' })}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-              config.aiProvider === 'openai' 
-                ? 'bg-white text-indigo-600 shadow-sm' 
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            OpenAI 兼容
-          </button>
-        </div>
+      {/* Tabs Navigation */}
+      <div className="flex p-1 bg-slate-100/80 rounded-xl mx-2">
+        <button
+          onClick={() => setActiveTab('ai')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${
+            activeTab === 'ai'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <Bot size={16} />
+          AI 助手
+        </button>
+        <button
+          onClick={() => setActiveTab('sync')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${
+            activeTab === 'sync'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <ArrowLeftRight size={16} />
+          数据同步
+        </button>
+      </div>
 
-        {config.aiProvider === 'gemini' && (
-          <div className="space-y-4 animate-fade-in">
-            <Input 
-              label="Model Name" 
-              value={config.geminiModel} 
-              onChange={e => setConfig({...config, geminiModel: e.target.value})}
-              placeholder="gemini-3-flash-preview"
-            />
-            <Input 
-              label="API Key (可选)" 
-              type="password"
-              value={config.geminiKey || ''} 
-              onChange={e => setConfig({...config, geminiKey: e.target.value})}
-              placeholder="留空则使用内置默认 Key"
-            />
-            <p className="text-xs text-slate-500 mt-2 flex items-start bg-indigo-50 p-2 rounded-lg">
-              <AlertCircle size={14} className="mr-1.5 mt-0.5 text-indigo-500 flex-shrink-0" />
-              <span>默认使用 gemini-3-flash-preview 模型。建议配置自己的 API Key 以获得更稳定的体验。</span>
-            </p>
+      {/* Tab Content Area */}
+      <div className="flex-1 overflow-y-auto px-2 pb-20 no-scrollbar">
+        {activeTab === 'ai' && (
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-4 animate-fade-in">
+            <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <span className="text-lg">🧠</span> AI 助手配置
+            </h3>
+            
+            <div className="space-y-3">
+              <Select
+                label="供应商"
+                size="sm"
+                value={config.aiProvider}
+                onChange={value => setConfig({ ...config, aiProvider: value as any })}
+                options={[
+                  { value: 'gemini', label: 'Google Gemini' },
+                  { value: 'openai', label: 'OpenAI 兼容' }
+                ]}
+              />
+
+              {config.aiProvider === 'gemini' && (
+                <div className="space-y-3 animate-fade-in pt-1 border-t border-slate-100 mt-2">
+                  <Input 
+                    label="Model Name" 
+                    size="sm"
+                    value={config.geminiModel} 
+                    onChange={e => setConfig({...config, geminiModel: e.target.value})}
+                    placeholder="gemini-3-flash-preview"
+                  />
+                  <Input 
+                    label="API Key" 
+                    size="sm"
+                    type="password"
+                    value={config.geminiKey || ''} 
+                    onChange={e => setConfig({...config, geminiKey: e.target.value})}
+                    placeholder="请输入您的 API Key"
+                  />
+                </div>
+              )}
+
+              {config.aiProvider === 'openai' && (
+                <div className="space-y-3 animate-fade-in pt-1 border-t border-slate-100 mt-2">
+                  <Input 
+                    label="API Base URL" 
+                    size="sm"
+                    value={config.openaiUrl} 
+                    onChange={e => setConfig({...config, openaiUrl: e.target.value})}
+                    placeholder="https://api.openai.com/v1"
+                  />
+                  <Input 
+                    label="API Key" 
+                    size="sm"
+                    type="password"
+                    value={config.openaiKey || ''} 
+                    onChange={e => setConfig({...config, openaiKey: e.target.value})}
+                    placeholder="sk-..."
+                  />
+                   <Input 
+                    label="Model Name" 
+                    size="sm"
+                    value={config.openaiModel} 
+                    onChange={e => setConfig({...config, openaiModel: e.target.value})}
+                    placeholder="gpt-3.5-turbo"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {config.aiProvider === 'openai' && (
-          <div className="space-y-4 animate-fade-in">
-            <Input 
-              label="API Base URL" 
-              value={config.openaiUrl} 
-              onChange={e => setConfig({...config, openaiUrl: e.target.value})}
-              placeholder="https://api.openai.com/v1"
-            />
-            <Input 
-              label="API Key" 
-              type="password"
-              value={config.openaiKey || ''} 
-              onChange={e => setConfig({...config, openaiKey: e.target.value})}
-              placeholder="sk-..."
-            />
-             <Input 
-              label="Model Name" 
-              value={config.openaiModel} 
-              onChange={e => setConfig({...config, openaiModel: e.target.value})}
-              placeholder="gpt-3.5-turbo"
-            />
+        {activeTab === 'sync' && (
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-4 animate-fade-in">
+            <div className="flex justify-between items-center mb-3">
+               <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                 <Cloud size={18} className="text-blue-500" /> 
+                 WebDAV 同步
+               </h3>
+               {config.lastSyncTime && (
+                 <span className="text-[10px] text-slate-400">
+                   {new Date(config.lastSyncTime).toLocaleDateString()}
+                 </span>
+               )}
+            </div>
+            
+            <div className="space-y-3">
+              <Input 
+                label="WebDAV URL" 
+                size="sm"
+                placeholder="https://dav.jianguoyun.com/dav/"
+                value={config.webdavUrl || ''} 
+                onChange={e => setConfig({...config, webdavUrl: e.target.value})}
+              />
+              <Input 
+                label="用户名" 
+                size="sm"
+                placeholder="Account / Email"
+                value={config.webdavUsername || ''} 
+                onChange={e => setConfig({...config, webdavUsername: e.target.value})}
+              />
+              <Input 
+                label="密码 / 应用授权码" 
+                size="sm"
+                type="password"
+                placeholder="Password"
+                value={config.webdavPassword || ''} 
+                onChange={e => setConfig({...config, webdavPassword: e.target.value})}
+              />
+              
+              <Button 
+                onClick={handleSync} 
+                variant="secondary"
+                size="sm"
+                disabled={isSyncing || !config.webdavUrl}
+                className={`w-full flex items-center justify-center gap-2 border border-blue-100 mt-2 ${isSyncing ? 'bg-blue-50' : 'bg-blue-50/50 hover:bg-blue-100'}`}
+              >
+                {isSyncing ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin text-blue-600" />
+                    <span className="text-blue-600">正在同步中...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw size={14} className="text-blue-600" />
+                    <span className="text-blue-600">立即同步</span>
+                  </>
+                )}
+              </Button>
+              <p className="text-[10px] text-slate-400 text-center leading-tight">
+                支持坚果云、Nextcloud 等标准 WebDAV 服务。数据将按周分页加密存储。
+              </p>
+            </div>
           </div>
         )}
       </div>
 
-      {/* WebDAV 设置 */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 p-5">
-        <div className="flex justify-between items-center mb-4">
-           <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-             <Cloud size={20} className="text-blue-500" /> 
-             数据同步 (WebDAV)
-           </h3>
-           {config.lastSyncTime && (
-             <span className="text-[10px] text-slate-400">
-               上次同步: {new Date(config.lastSyncTime).toLocaleString()}
-             </span>
-           )}
-        </div>
-        
-        <div className="space-y-4">
-          <Input 
-            label="WebDAV URL" 
-            placeholder="https://dav.jianguoyun.com/dav/"
-            value={config.webdavUrl || ''} 
-            onChange={e => setConfig({...config, webdavUrl: e.target.value})}
-          />
-          <Input 
-            label="用户名" 
-            placeholder="Account / Email"
-            value={config.webdavUsername || ''} 
-            onChange={e => setConfig({...config, webdavUsername: e.target.value})}
-          />
-          <Input 
-            label="密码 / 应用授权码" 
-            type="password"
-            placeholder="Password"
-            value={config.webdavPassword || ''} 
-            onChange={e => setConfig({...config, webdavPassword: e.target.value})}
-          />
-          
-          <Button 
-            onClick={handleSync} 
-            variant="secondary"
-            disabled={isSyncing || !config.webdavUrl}
-            className={`w-full flex items-center justify-center gap-2 border border-blue-100 ${isSyncing ? 'bg-blue-50' : 'bg-blue-50/50 hover:bg-blue-100'}`}
-          >
-            {isSyncing ? (
-              <>
-                <Loader2 size={16} className="animate-spin text-blue-600" />
-                <span className="text-blue-600">正在同步中...</span>
-              </>
-            ) : (
-              <>
-                <RefreshCw size={16} className="text-blue-600" />
-                <span className="text-blue-600">立即同步</span>
-              </>
-            )}
-          </Button>
-          <p className="text-[10px] text-slate-400 text-center">
-            支持坚果云、Nextcloud 等标准 WebDAV 服务。数据将按周分页加密存储。
-          </p>
-        </div>
-      </div>
-
-      <div className="pt-4 pb-20">
-        <Button onClick={handleSave} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 gap-2" size="lg">
-          <Save size={18} />
+      <div className="fixed bottom-20 left-4 right-4 z-10">
+        <Button onClick={handleSave} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 gap-2 rounded-xl" size="md">
+          <Save size={16} />
           保存所有设置
         </Button>
       </div>

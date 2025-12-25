@@ -1,5 +1,5 @@
-import React from 'react';
-import { X } from 'lucide-react';
+import React, { useId } from 'react';
+import { X, ChevronDown } from 'lucide-react';
 
 // 卡片容器
 export const Card: React.FC<{ children: React.ReactNode; className?: string; title?: string }> = ({
@@ -54,17 +54,90 @@ export const Button: React.FC<ButtonProps> = ({
 // 输入框
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  size?: 'sm' | 'md';
 }
 
-export const Input: React.FC<InputProps> = ({ label, className = '', ...props }) => (
-  <div className="w-full">
-    {label && <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>}
-    <input
-      className={`w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none placeholder:text-slate-400 ${className}`}
-      {...props}
-    />
-  </div>
-);
+export const Input: React.FC<InputProps> = ({ label, size = 'md', className = '', id: propsId, ...props }) => {
+  const generatedId = useId();
+  const id = propsId || generatedId;
+  const sizeClass = size === 'sm' ? 'h-9 text-xs px-2.5' : 'h-11 px-3 text-sm';
+  
+  return (
+    <div className="w-full">
+      {label && <label htmlFor={id} className={`block font-medium text-slate-700 mb-1.5 ${size === 'sm' ? 'text-xs' : 'text-sm'}`}>{label}</label>}
+      <input
+        id={id}
+        className={`w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none placeholder:text-slate-400 ${sizeClass} ${className}`}
+        {...props}
+      />
+    </div>
+  );
+};
+
+// 下拉选择框
+interface SelectProps {
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  size?: 'sm' | 'md';
+  className?: string;
+  id?: string;
+}
+
+export const Select: React.FC<SelectProps> = ({ label, value, onChange, options, size = 'md', className = '', id: propsId }) => {
+  const generatedId = useId();
+  const id = propsId || generatedId;
+  const [isOpen, setIsOpen] = React.useState(false);
+  
+  const sizeClass = size === 'sm' ? 'h-9 text-xs px-2.5' : 'h-11 px-3 text-sm';
+  const selectedLabel = options.find(opt => opt.value === value)?.label || value;
+
+  return (
+    <div className="w-full relative">
+      {label && <label htmlFor={id} className={`block font-medium text-slate-700 mb-1.5 ${size === 'sm' ? 'text-xs' : 'text-sm'}`}>{label}</label>}
+      
+      {/* Trigger Button */}
+      <button
+        id={id}
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full text-left flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none ${sizeClass} ${className}`}
+      >
+        <span className={!value ? 'text-slate-400' : ''}>{selectedLabel}</span>
+        <ChevronDown size={size === 'sm' ? 14 : 16} className="text-slate-400" />
+      </button>
+
+      {/* Backdrop for click-outside */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setIsOpen(false)} 
+        />
+      )}
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-100 rounded-xl shadow-lg z-50 overflow-hidden animate-scale-in origin-top">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setIsOpen(false);
+              }}
+              className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between ${size === 'sm' ? 'text-xs' : 'text-sm'} ${value === opt.value ? 'text-indigo-600 bg-indigo-50/50 font-medium' : 'text-slate-700'}`}
+            >
+              {opt.label}
+              {value === opt.value && <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // 文本域
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {

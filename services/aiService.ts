@@ -42,8 +42,8 @@ ${reviewContent}
 };
 
 async function callGemini(config: any, systemPrompt: string, userContent: string): Promise<string> {
-  // 优先使用用户配置的 Key，其次使用环境变量
-  const apiKey = config.geminiKey || process.env.API_KEY;
+  // 必须使用用户配置的 Key
+  const apiKey = config.geminiKey;
   
   if (!apiKey) {
     throw new Error("未配置 API Key。请点击左上角设置，配置 Gemini Key。");
