@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TabView } from './types';
-import { CheckSquare, PieChart, BookOpen, Settings, RefreshCw, Loader2, Sprout } from 'lucide-react';
+import { CheckSquare, PieChart, BookOpen, Settings, RefreshCw, Loader2, Sprout, Briefcase } from 'lucide-react';
 import { useToast } from './components/Toast';
 import { db } from './db';
 import { WebDAVService } from './services/webdavService';
@@ -119,6 +119,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
               onClick={() => onTabChange('habits')} 
               icon={<Sprout size={20} />} 
               label="习惯" 
+            />
+            <NavButton 
+              active={activeTab === 'projects'} 
+              onClick={() => onTabChange('projects')} 
+              icon={<Briefcase size={20} />} 
+              label="项目" 
             />
             <NavButton 
               active={activeTab === 'accounting'} 

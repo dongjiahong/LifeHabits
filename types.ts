@@ -3,12 +3,66 @@ export enum TaskStatus {
   COMPLETED = 1,
 }
 
+export enum ProjectStatus {
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  DELAYED = 'DELAYED',
+}
+
 export interface Task {
   id?: number;
   title: string;
   status: TaskStatus;
   date: string; // YYYY-MM-DD
   isPriority: boolean; // 是否为最重要的5件事之一
+  createdAt: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
+  // 项目关联
+  projectId?: number;
+  bigGoalId?: number;
+  smallGoalId?: number;
+}
+
+export interface Project {
+  id?: number;
+  name: string;
+  description?: string; // 支持 Markdown
+  status: ProjectStatus;
+  startDate?: string;
+  endDate?: string;
+  progress: number; // 0-100
+  createdAt: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
+}
+
+export interface BigGoal {
+  id?: number;
+  projectId: number;
+  name: string;
+  description?: string;
+  status: ProjectStatus;
+  startDate?: string;
+  endDate?: string;
+  progress: number; // 0-100
+  isMilestone?: boolean;
+  createdAt: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
+}
+
+export interface SmallGoal {
+  id?: number;
+  projectId: number;
+  bigGoalId: number;
+  name: string;
+  description?: string;
+  status: ProjectStatus;
+  startDate?: string;
+  endDate?: string;
+  progress: number; // 0-100
+  isMilestone: boolean;
   createdAt: number;
   updatedAt?: number;
   isDeleted?: boolean;
@@ -102,4 +156,4 @@ export interface HabitLog {
   isDeleted?: boolean;
 }
 
-export type TabView = 'todo' | 'accounting' | 'review' | 'habits' | 'settings';
+export type TabView = 'todo' | 'accounting' | 'review' | 'habits' | 'settings' | 'projects';

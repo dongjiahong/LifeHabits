@@ -1,5 +1,6 @@
 import { db } from '../db';
 import { Task, TaskStatus } from '../types';
+import { calculateProjectProgress } from './projectService';
 
 export async function addTask(task: Omit<Task, 'id'>): Promise<number> {
     const newTask = {
@@ -8,7 +9,11 @@ export async function addTask(task: Omit<Task, 'id'>): Promise<number> {
         updatedAt: Date.now(),
         isDeleted: false
     };
-    return await db.tasks.add(newTask);
+    const id = await db.tasks.add(newTask);
+    if (task.projectId) {
+        await calculateProjectProgress(task.projectId);
+    }
+    return id;
 }
 
 export async function updateTask(id: number, updates: Partial<Task>): Promise<void> {
@@ -16,13 +21,21 @@ export async function updateTask(id: number, updates: Partial<Task>): Promise<vo
         ...updates,
         updatedAt: Date.now()
     });
+    const task = await db.tasks.get(id);
+    if (task?.projectId) {
+        await calculateProjectProgress(task.projectId);
+    }
 }
 
 export async function deleteTask(id: number): Promise<void> {
+    const task = await db.tasks.get(id);
     await db.tasks.update(id, {
         isDeleted: true,
         updatedAt: Date.now()
     });
+    if (task?.projectId) {
+        await calculateProjectProgress(task.projectId);
+    }
 }
 
 export async function getTasks(date: string, includeOverdue: boolean = false): Promise<Task[]> {

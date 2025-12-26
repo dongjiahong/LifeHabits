@@ -9,13 +9,14 @@
 - **隐私倡导者 & 数字游民**：偏好 "Local First" 架构，要求数据完全掌控在自己手中，拒绝被大数据杀熟或监控。
 
 ## Core Value Proposition
-1.  **极简与聚合 (All-in-One Minimalism)**：拒绝在多个 App 间切换，一站式解决待办、记账、习惯追踪需求，界面纯净无干扰。
+1.  **极简与聚合 (All-in-One Minimalism)**：拒绝在多个 App 间切换，一站式解决待办、记账、习惯追踪以及长期的项目规划需求，界面纯净无干扰。
 2.  **本地优先与隐私安全 (Local-First Privacy)**：数据存储于本地 IndexedDB，通过加密 WebDAV 同步，确保用户拥有 100% 的数据主权。
 3.  **AI 赋能的深度复盘 (AI-Driven Reflection)**：利用 Google Gemini 读取用户的行为数据，生成个性化、有温度的每日总结与建议，不仅仅是记录，更是指导。
 4.  **游戏化与具象化反馈 (Gamified Visualization)**：通过“习惯玻璃瓶”和“豆子”的物理模拟，让时间的流逝和坚持的成果看得见、摸得着。
 
 ## Key Features
 -   **极简待办 (Todo)**：今日/明日视图，Top 5 优先聚焦，Backlog 分离机制。
+-   **项目管理 (Project)**：多级目标拆解（项目-大目标-小目标-任务），里程碑设置，进度自动追踪。
 -   **习惯花园 (Habit Garden)**：基于 Canvas 的物理粒子效果，习惯养成可视化（绿豆/红豆），100 天归档机制。
 -   **统一记账 (Accounting)**：时间与金钱双维度记录，自动饼图分析，极简录入流。
 -   **AI 深度复盘 (Review)**：内置 KPT/每日四问模版，集成 Gemini AI 生成洞察报告，历史足迹回顾。

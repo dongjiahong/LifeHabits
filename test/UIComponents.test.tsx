@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { Input, Select } from '../components/UIComponents';
+import { Input, Select, ProgressBar, MilestoneIcon } from '../components/UIComponents';
 import React from 'react';
 
 describe('UIComponents', () => {
@@ -57,6 +57,28 @@ describe('UIComponents', () => {
        const button = screen.getByRole('button');
        expect(button).toHaveClass('h-9');
        expect(button).toHaveClass('text-xs');
+    });
+  });
+
+  describe('ProgressBar', () => {
+    it('renders with correct width', () => {
+      render(<ProgressBar progress={60} />);
+      const innerBar = screen.getByTestId('progress-bar-inner');
+      expect(innerBar.style.width).toBe('60%');
+    });
+
+    it('applies custom color', () => {
+      render(<ProgressBar progress={100} color="bg-green-500" />);
+      const innerBar = screen.getByTestId('progress-bar-inner');
+      expect(innerBar).toHaveClass('bg-green-500');
+    });
+  });
+
+  describe('MilestoneIcon', () => {
+    it('renders milestone style when active', () => {
+      render(<MilestoneIcon active={true} />);
+      const iconContainer = screen.getByTestId('milestone-icon');
+      expect(iconContainer).toHaveClass('text-amber-500');
     });
   });
 });

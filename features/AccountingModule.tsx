@@ -12,7 +12,8 @@ import { getWebDAVService } from '../services/webdavService';
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export const AccountingModule: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<LogType>(LogType.TIME);
+  // Hardcoded to TIME, removed state for switching
+  const activeTab = LogType.TIME;
   const [targetDate, setTargetDate] = useState(getTodayStr());
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
@@ -24,7 +25,7 @@ export const AccountingModule: React.FC = () => {
   // Use service for data fetching
   const logs = useLiveQuery(
     () => getLogs(targetDate, activeTab),
-    [targetDate, activeTab]
+    [targetDate]
   );
 
   // Lazy Download Trigger
@@ -125,46 +126,24 @@ export const AccountingModule: React.FC = () => {
         </button>
       </div>
 
-      {/* 1. 头部切换 - 极简紧凑 */}
-      <div className="flex bg-slate-200/60 p-1 rounded-xl mx-auto max-w-[240px] backdrop-blur-sm">
-        <button
-          onClick={() => { setActiveTab(LogType.TIME); cancelEdit(); }}
-          className={`flex-1 flex items-center justify-center py-1.5 text-xs font-bold rounded-lg transition-all ${
-            activeTab === LogType.TIME ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          <Clock size={14} className="mr-1" />
-          时间账
-        </button>
-        <button
-          onClick={() => { setActiveTab(LogType.MONEY); cancelEdit(); }}
-          className={`flex-1 flex items-center justify-center py-1.5 text-xs font-bold rounded-lg transition-all ${
-            activeTab === LogType.MONEY ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          <DollarSign size={14} className="mr-1" />
-          金钱账
-        </button>
-      </div>
-
-      {/* 2. 统计卡片 - 并排紧凑 */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* 1. 统计卡片 - 仅保留时间 */}
+      <div className="grid grid-cols-2 gap-3 max-w-[280px] mx-auto">
         <div className="bg-white/70 backdrop-blur rounded-xl p-3 border border-white/60 flex flex-col items-center justify-center shadow-sm">
-           <span className="text-slate-500 text-[10px] mb-0.5">{targetDate === todayStr ? '今日' : '当日'}累计</span>
-           <span className={`text-lg font-bold ${activeTab === LogType.TIME ? 'text-indigo-600' : 'text-emerald-600'}`}>
-             {activeTab === LogType.TIME ? formatDuration(totalValue) : formatCurrency(totalValue)}
+           <span className="text-slate-500 text-[10px] mb-0.5">{targetDate === todayStr ? '今日' : '当日'}投入</span>
+           <span className="text-lg font-bold text-indigo-600">
+             {formatDuration(totalValue)}
            </span>
         </div>
         <div className="bg-white/70 backdrop-blur rounded-xl p-3 border border-white/60 flex flex-col items-center justify-center shadow-sm">
-           <span className="text-slate-500 text-[10px] mb-0.5">记录笔数</span>
+           <span className="text-slate-500 text-[10px] mb-0.5">记录事项</span>
            <span className="text-lg font-bold text-slate-800">{logs?.length || 0}</span>
         </div>
       </div>
 
-      {/* 3. 录入表单 - 单行紧凑 */}
+      {/* 2. 录入表单 */}
       <div className="bg-white/80 backdrop-blur rounded-xl p-3 border border-white/60 shadow-sm">
         <div className="flex items-center justify-between mb-2">
-           <h3 className="text-xs font-bold text-slate-700">{editingId ? "修改记录" : (activeTab === LogType.TIME ? "时间去哪了？" : "钱花哪了？")}</h3>
+           <h3 className="text-xs font-bold text-slate-700">{editingId ? "修改记录" : "时间去哪了？"}</h3>
            {editingId && <button onClick={cancelEdit} className="text-xs text-slate-400"><X size={14}/></button>}
         </div>
         
@@ -173,16 +152,16 @@ export const AccountingModule: React.FC = () => {
           <div className="flex gap-2">
              <div className="flex-1">
                <Input 
-                  placeholder={activeTab === LogType.TIME ? "事项 (如: 阅读)" : "用途 (如: 早餐)"}
+                  placeholder="事项 (如: 阅读、编程)"
                   value={name} 
                   onChange={(e) => setName(e.target.value)}
-                  className="h-9 text-xs" // 降低高度，减小字体
+                  className="h-9 text-xs"
                />
              </div>
              <div className="w-24">
                <Input 
                   type="number" 
-                  placeholder={activeTab === LogType.TIME ? "分钟" : "金额"} 
+                  placeholder="分钟" 
                   value={value} 
                   onChange={(e) => setValue(e.target.value)} 
                   className="h-9 text-xs text-center px-1" 
@@ -190,16 +169,16 @@ export const AccountingModule: React.FC = () => {
              </div>
           </div>
           <Button onClick={handleSave} disabled={!name || !value} className="w-full h-9 text-xs bg-indigo-600 shadow-md shadow-indigo-200 rounded-lg">
-             {editingId ? '保存修改' : '记一笔'}
+             {editingId ? '保存修改' : '记录时间'}
           </Button>
         </div>
       </div>
 
-      {/* 4. 图表与列表 - 左右分栏紧凑布局 */}
+      {/* 3. 图表与列表 */}
       {logs && logs.length > 0 && (
         <div className="bg-white/80 backdrop-blur rounded-xl p-3 border border-white/60 shadow-sm flex flex-col">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-bold text-slate-700">分布概览</h3>
+            <h3 className="text-xs font-bold text-slate-700">时间分布</h3>
           </div>
           
           <div className="flex gap-2 h-36">
@@ -210,7 +189,7 @@ export const AccountingModule: React.FC = () => {
                     <Pie data={chartData} cx="50%" cy="50%" innerRadius={25} outerRadius={45} paddingAngle={2} dataKey="value" stroke="none">
                       {chartData?.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                     </Pie>
-                    <Tooltip formatter={(value: number) => activeTab === LogType.TIME ? `${value}m` : `¥${value}`} contentStyle={{fontSize: '10px', padding: '4px', borderRadius: '8px'}} />
+                    <Tooltip formatter={(value: number) => `${value}m`} contentStyle={{fontSize: '10px', padding: '4px', borderRadius: '8px'}} />
                   </PieChart>
                 </ResponsiveContainer>
                 {/* 饼图中心文字 */}
@@ -227,8 +206,8 @@ export const AccountingModule: React.FC = () => {
                       <span className="font-medium text-slate-700 truncate">{log.name}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className={`font-bold ${activeTab === LogType.TIME ? 'text-indigo-500' : 'text-emerald-500'}`}>
-                        {activeTab === LogType.TIME ? `${log.value}m` : `¥${log.value}`}
+                      <span className="font-bold text-indigo-500">
+                        {log.value}m
                       </span>
                       <div className="flex gap-1">
                         <button onClick={() => startEdit(log)} className="text-slate-300 hover:text-indigo-500 p-0.5"><Edit2 size={12} /></button>
@@ -244,8 +223,8 @@ export const AccountingModule: React.FC = () => {
       
       {(!logs || logs.length === 0) && (
         <div className="text-center py-12 text-slate-400 text-xs">
-          <TrendingUp className="mx-auto mb-2 opacity-20" size={32} />
-          <p>暂无记录，开始第一笔吧</p>
+          <Clock className="mx-auto mb-2 opacity-20" size={32} />
+          <p>记录当下的专注</p>
         </div>
       )}
     </div>

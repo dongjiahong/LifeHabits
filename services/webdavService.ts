@@ -107,6 +107,12 @@ export class WebDAVService {
     const lastTpl = await db.templates.orderBy('updatedAt').last();
     if (lastTpl?.updatedAt) updateFileMax(this.getFilePathForData('template'), lastTpl.updatedAt);
 
+    const lastProj = await db.projects.orderBy('updatedAt').last();
+    const lastBG = await db.bigGoals.orderBy('updatedAt').last();
+    const lastSG = await db.smallGoals.orderBy('updatedAt').last();
+    const projMax = Math.max(lastProj?.updatedAt || 0, lastBG?.updatedAt || 0, lastSG?.updatedAt || 0);
+    if (projMax > 0) updateFileMax(this.getFilePathForData('project'), projMax);
+
     return manifest;
   }
 
@@ -195,11 +201,12 @@ export class WebDAVService {
     }
   }
 
-  getFilePathForData(type: 'todo' | 'habit' | 'accounting' | 'review' | 'template', dateOrWeek?: string): string {
+  getFilePathForData(type: 'todo' | 'habit' | 'accounting' | 'review' | 'template' | 'project', dateOrWeek?: string): string {
     let path = '';
     switch (type) {
       case 'todo': path = 'todo/all.json'; break;
       case 'habit': path = 'habits/all.json'; break;
+      case 'project': path = 'projects/all.json'; break;
       case 'template': path = 'reviews/templates.json'; break;
       case 'accounting': 
         const week = dateOrWeek?.includes('-W') ? dateOrWeek : getWeekStr(dateOrWeek!);
@@ -216,9 +223,10 @@ export class WebDAVService {
   private isCriticalPath(filePath: string): boolean {
     const todoPath = this.getFilePathForData('todo');
     const habitPath = this.getFilePathForData('habit');
+    const projectPath = this.getFilePathForData('project');
     const templatePath = this.getFilePathForData('template');
 
-    if (filePath === todoPath || filePath === habitPath || filePath === templatePath) return true;
+    if (filePath === todoPath || filePath === habitPath || filePath === projectPath || filePath === templatePath) return true;
     
     const today = new Date().toISOString().split('T')[0];
     const currentWeek = getWeekStr(today);
@@ -272,6 +280,13 @@ export class WebDAVService {
         habitLogs: await db.habitLogs.toArray()
       };
     }
+    if (filePath === this.getFilePathForData('project')) {
+      return {
+        projects: await db.projects.toArray(),
+        bigGoals: await db.bigGoals.toArray(),
+        smallGoals: await db.smallGoals.toArray()
+      };
+    }
     if (filePath === this.getFilePathForData('template')) return await db.templates.toArray();
     
     if (filePath.includes('accounting/')) {
@@ -292,6 +307,13 @@ export class WebDAVService {
     if (filePath === this.getFilePathForData('habit')) {
       await this.lwwSyncTable(db.habits, remoteData.habits || []);
       await this.lwwSyncTable(db.habitLogs, remoteData.habitLogs || []);
+      return;
+    }
+
+    if (filePath === this.getFilePathForData('project')) {
+      await this.lwwSyncTable(db.projects, remoteData.projects || []);
+      await this.lwwSyncTable(db.bigGoals, remoteData.bigGoals || []);
+      await this.lwwSyncTable(db.smallGoals, remoteData.smallGoals || []);
       return;
     }
 

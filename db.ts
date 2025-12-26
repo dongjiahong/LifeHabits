@@ -1,6 +1,6 @@
 
 import Dexie, { Table } from 'dexie';
-import { Task, AccountLog, Review, ReviewTemplate, AppSettings, Habit, HabitLog } from './types';
+import { Task, AccountLog, Review, ReviewTemplate, AppSettings, Habit, HabitLog, Project, BigGoal, SmallGoal } from './types';
 
 class LifeHabitsDatabase extends Dexie {
   tasks!: Table<Task, number>;
@@ -10,6 +10,9 @@ class LifeHabitsDatabase extends Dexie {
   settings!: Table<AppSettings, number>;
   habits!: Table<Habit, number>;
   habitLogs!: Table<HabitLog, number>;
+  projects!: Table<Project, number>;
+  bigGoals!: Table<BigGoal, number>;
+  smallGoals!: Table<SmallGoal, number>;
 
   constructor() {
     super('LifeHabitsDB');
@@ -101,6 +104,14 @@ class LifeHabitsDatabase extends Dexie {
         });
     });
 
+    // Version 10: Add project management tables
+    (this as any).version(10).stores({
+      projects: '++id, status, createdAt, updatedAt, isDeleted',
+      bigGoals: '++id, projectId, status, createdAt, updatedAt, isDeleted',
+      smallGoals: '++id, projectId, bigGoalId, status, isMilestone, createdAt, updatedAt, isDeleted',
+      tasks: '++id, date, status, isPriority, projectId, bigGoalId, smallGoalId, createdAt, updatedAt, isDeleted'
+    });
+
     (this as any).on('populate', () => {
       const baseTime = 1735171200000; // 2024-12-26 固定时间戳
       this.templates.bulkAdd([
@@ -148,7 +159,7 @@ export const db = new LifeHabitsDatabase();
  * 此操作不可逆。建议在同步完成后执行。
  */
 export async function purgeDeletedData() {
-  const tables = ['tasks', 'logs', 'reviews', 'templates', 'habits', 'habitLogs'];
+  const tables = ['tasks', 'logs', 'reviews', 'templates', 'habits', 'habitLogs', 'projects', 'bigGoals', 'smallGoals'];
   
   await db.transaction('rw', tables.map(t => (db as any)[t]), async () => {
     for (const tableName of tables) {

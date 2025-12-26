@@ -1,16 +1,58 @@
 import React, { useId } from 'react';
-import { X, ChevronDown } from 'lucide-react';
+import { X, ChevronDown, Trophy, Medal } from 'lucide-react';
 
 // 卡片容器
-export const Card: React.FC<{ children: React.ReactNode; className?: string; title?: string }> = ({
+export const Card: React.FC<{ children: React.ReactNode; className?: string; title?: string; onClick?: () => void }> = ({
   children,
   className = '',
   title,
+  onClick,
 }) => (
-  <div className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-5 ${className}`}>
+  <div onClick={onClick} className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-5 ${className}`}>
     {title && <h3 className="text-lg font-bold text-slate-800 mb-4">{title}</h3>}
     {children}
   </div>
+);
+
+// 进度条
+export const ProgressBar: React.FC<{ progress: number; color?: string; className?: string }> = ({
+  progress,
+  color = 'bg-indigo-600',
+  className = '',
+}) => (
+  <div className={`w-full bg-slate-100 rounded-full h-2 overflow-hidden ${className}`}>
+    <div
+      data-testid="progress-bar-inner"
+      className={`h-full transition-all duration-500 ease-out ${color}`}
+      style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+    />
+  </div>
+);
+
+// 里程碑图标
+export const MilestoneIcon: React.FC<{ active?: boolean; className?: string; size?: number }> = ({
+  active = false,
+  className = '',
+  size = 16,
+}) => (
+  <div 
+    data-testid="milestone-icon"
+    className={`p-1.5 rounded-lg transition-colors ${active ? 'bg-amber-50 text-amber-500' : 'bg-slate-50 text-slate-400'} ${className}`}
+  >
+    <Trophy size={size} />
+  </div>
+);
+
+// 徽章/状态标签
+export const Badge: React.FC<{ children: React.ReactNode; color?: string; className?: string; onClick?: () => void }> = ({
+  children,
+  color = 'bg-slate-100 text-slate-600',
+  className = '',
+  onClick
+}) => (
+  <span onClick={onClick} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${color} ${className}`}>
+    {children}
+  </span>
 );
 
 // 按钮
@@ -52,7 +94,7 @@ export const Button: React.FC<ButtonProps> = ({
 };
 
 // 输入框
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
   size?: 'sm' | 'md';
 }

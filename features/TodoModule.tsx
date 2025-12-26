@@ -2,11 +2,16 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Task, TaskStatus } from '../types';
 import { getTodayStr, getTomorrowStr } from '../utils';
-import { Button, Input } from '../components/UIComponents';
+import { Button, Input, Badge } from '../components/UIComponents';
 import { Plus, Check, Trash2, Calendar, Moon, Star, Flame, Circle } from 'lucide-react';
 import { addTask, updateTask, deleteTask, getTasks } from '../services/todoService';
+import { db } from '../db';
 
-export const TodoModule: React.FC = () => {
+interface TodoModuleProps {
+  onNavigateToProject?: (projectId: number) => void;
+}
+
+export const TodoModule: React.FC<TodoModuleProps> = ({ onNavigateToProject }) => {
   const [activeTab, setActiveTab] = useState<'today' | 'tomorrow'>('today');
   const [newTask, setNewTask] = useState('');
   
@@ -17,9 +22,38 @@ export const TodoModule: React.FC = () => {
     [currentDateStr, activeTab]
   );
 
+  const contextMap = useLiveQuery(
+    async () => {
+      const [projects, bigGoals, smallGoals] = await Promise.all([
+        db.projects.toArray(),
+        db.bigGoals.toArray(),
+        db.smallGoals.toArray()
+      ]);
+
+      const pMap = projects.reduce((acc, p) => ({ ...acc, [p.id!]: p.name }), {} as Record<number, string>);
+      const bgMap = bigGoals.reduce((acc, bg) => ({ ...acc, [bg.id!]: bg.name }), {} as Record<number, string>);
+      const sgMap = smallGoals.reduce((acc, sg) => ({ ...acc, [sg.id!]: sg.name }), {} as Record<number, string>);
+
+      return { pMap, bgMap, sgMap };
+    },
+    []
+  );
+
   // 分离任务列表
   const priorityTasks = tasks?.filter(t => t.isPriority) || [];
   const otherTasks = tasks?.filter(t => !t.isPriority) || [];
+
+  const getContextLabel = (task: Task) => {
+    if (!contextMap || !task.projectId) return undefined;
+    
+    const pName = contextMap.pMap[task.projectId];
+    const bgName = task.bigGoalId ? contextMap.bgMap[task.bigGoalId] : undefined;
+    const sgName = task.smallGoalId ? contextMap.sgMap[task.smallGoalId] : undefined;
+    
+    // 如果路径太长，可能需要截断，但先显示完整路径
+    const parts = [pName, bgName, sgName].filter(Boolean);
+    return parts.join(' / ');
+  };
 
   const handleAddTask = async () => {
     if (!newTask.trim()) return;
@@ -149,6 +183,8 @@ export const TodoModule: React.FC = () => {
               onUpdateTitle={(newTitle) => task.id && handleUpdateTaskTitle(task.id, newTitle)}
               isPriorityList={true}
               showDate={task.date !== currentDateStr}
+              contextLabel={getContextLabel(task)}
+              onContextClick={() => task.projectId && onNavigateToProject && onNavigateToProject(task.projectId)}
             />
           ))
         )}
@@ -166,16 +202,20 @@ export const TodoModule: React.FC = () => {
         )}
 
         {otherTasks.map(task => (
-          <TaskItem 
-            key={task.id} 
-            task={task} 
-            onToggleStatus={() => toggleTaskStatus(task)}
-            onTogglePriority={() => togglePriority(task)}
-                          onDelete={() => handleDeleteTask(task.id)}
-                          onUpdateTitle={(newTitle) => task.id && handleUpdateTaskTitle(task.id, newTitle)}
-                          isPriorityList={false}
-                          showDate={task.date !== currentDateStr}
-                        />        ))}
+                              <TaskItem 
+                                key={task.id} 
+                                task={task} 
+                                onToggleStatus={() => toggleTaskStatus(task)}
+                                onTogglePriority={() => togglePriority(task)}
+                                onDelete={() => handleDeleteTask(task.id)}
+                                onUpdateTitle={(newTitle) => task.id && handleUpdateTaskTitle(task.id, newTitle)}
+                                isPriorityList={false}
+                                showDate={task.date !== currentDateStr}
+                                contextLabel={getContextLabel(task)}
+                                onContextClick={() => task.projectId && onNavigateToProject && onNavigateToProject(task.projectId)}
+                              />
+                    
+                  ))}
       </div>
     </div>
   );
@@ -190,7 +230,9 @@ const TaskItem: React.FC<{
   onUpdateTitle: (newTitle: string) => void;
   isPriorityList: boolean;
   showDate?: boolean;
-}> = ({ task, onToggleStatus, onTogglePriority, onDelete, onUpdateTitle, isPriorityList, showDate }) => {
+  contextLabel?: string;
+  onContextClick?: () => void;
+}> = ({ task, onToggleStatus, onTogglePriority, onDelete, onUpdateTitle, isPriorityList, showDate, contextLabel, onContextClick }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(task.title);
 
@@ -248,6 +290,17 @@ const TaskItem: React.FC<{
             </span>
           )}
         </div>
+        {contextLabel && (
+          <div className="mt-1">
+            <Badge 
+              color="bg-indigo-50 text-indigo-500" 
+              className={`opacity-80 text-[10px] px-2 py-0.5 truncate max-w-full inline-block ${onContextClick ? 'cursor-pointer hover:bg-indigo-100 hover:text-indigo-700' : ''}`}
+              onClick={onContextClick}
+            >
+              {contextLabel}
+            </Badge>
+          </div>
+        )}
       </div>
 
       {/* 操作区 */}
