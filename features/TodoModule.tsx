@@ -62,6 +62,10 @@ export const TodoModule: React.FC = () => {
     if (id) await deleteTask(id);
   };
 
+  const handleUpdateTaskTitle = async (id: number, newTitle: string) => {
+    await updateTask(id, { title: newTitle });
+  };
+
   const totalTasks = tasks?.length || 0;
   const completedCount = tasks?.filter(t => t.status === TaskStatus.COMPLETED).length || 0;
   const progress = totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0;
@@ -142,6 +146,7 @@ export const TodoModule: React.FC = () => {
               onToggleStatus={() => toggleTaskStatus(task)}
               onTogglePriority={() => togglePriority(task)}
               onDelete={() => handleDeleteTask(task.id)}
+              onUpdateTitle={(newTitle) => task.id && handleUpdateTaskTitle(task.id, newTitle)}
               isPriorityList={true}
             />
           ))
@@ -166,6 +171,7 @@ export const TodoModule: React.FC = () => {
             onToggleStatus={() => toggleTaskStatus(task)}
             onTogglePriority={() => togglePriority(task)}
             onDelete={() => handleDeleteTask(task.id)}
+            onUpdateTitle={(newTitle) => task.id && handleUpdateTaskTitle(task.id, newTitle)}
             isPriorityList={false}
           />
         ))}
@@ -180,8 +186,30 @@ const TaskItem: React.FC<{
   onToggleStatus: () => void;
   onTogglePriority: () => void;
   onDelete: () => void;
+  onUpdateTitle: (newTitle: string) => void;
   isPriorityList: boolean;
-}> = ({ task, onToggleStatus, onTogglePriority, onDelete, isPriorityList }) => {
+}> = ({ task, onToggleStatus, onTogglePriority, onDelete, onUpdateTitle, isPriorityList }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(task.title);
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    if (editValue.trim() && editValue !== task.title) {
+      onUpdateTitle(editValue.trim());
+    } else {
+      setEditValue(task.title);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setEditValue(task.title);
+    }
+  };
+
   return (
     <div className={`group flex items-center p-3.5 bg-white rounded-xl transition-all duration-300 ${task.status === TaskStatus.COMPLETED ? 'opacity-60 bg-slate-50' : 'shadow-sm shadow-indigo-100 hover:shadow-md'}`}>
       {/* 勾选框 */}
@@ -193,9 +221,23 @@ const TaskItem: React.FC<{
       </button>
       
       {/* 标题 */}
-      <span className={`flex-1 text-sm font-medium transition-all ${task.status === TaskStatus.COMPLETED ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
-        {task.title}
-      </span>
+      {isEditing ? (
+        <input
+          autoFocus
+          className="flex-1 text-sm font-medium bg-indigo-50 border-none outline-none focus:ring-0 p-0 text-slate-800"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+        />
+      ) : (
+        <span 
+          onDoubleClick={() => setIsEditing(true)}
+          className={`flex-1 text-sm font-medium transition-all cursor-text ${task.status === TaskStatus.COMPLETED ? 'text-slate-400 line-through' : 'text-slate-800'}`}
+        >
+          {task.title}
+        </span>
+      )}
 
       {/* 操作区 */}
       <div className="flex items-center gap-1">
