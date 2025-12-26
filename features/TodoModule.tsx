@@ -13,8 +13,8 @@ export const TodoModule: React.FC = () => {
   const currentDateStr = activeTab === 'today' ? getTodayStr() : getTomorrowStr();
 
   const tasks = useLiveQuery(
-    () => getTasks(currentDateStr),
-    [currentDateStr]
+    () => getTasks(currentDateStr, activeTab === 'today'),
+    [currentDateStr, activeTab]
   );
 
   // 分离任务列表
@@ -148,6 +148,7 @@ export const TodoModule: React.FC = () => {
               onDelete={() => handleDeleteTask(task.id)}
               onUpdateTitle={(newTitle) => task.id && handleUpdateTaskTitle(task.id, newTitle)}
               isPriorityList={true}
+              showDate={task.date !== currentDateStr}
             />
           ))
         )}
@@ -170,11 +171,11 @@ export const TodoModule: React.FC = () => {
             task={task} 
             onToggleStatus={() => toggleTaskStatus(task)}
             onTogglePriority={() => togglePriority(task)}
-            onDelete={() => handleDeleteTask(task.id)}
-            onUpdateTitle={(newTitle) => task.id && handleUpdateTaskTitle(task.id, newTitle)}
-            isPriorityList={false}
-          />
-        ))}
+                          onDelete={() => handleDeleteTask(task.id)}
+                          onUpdateTitle={(newTitle) => task.id && handleUpdateTaskTitle(task.id, newTitle)}
+                          isPriorityList={false}
+                          showDate={task.date !== currentDateStr}
+                        />        ))}
       </div>
     </div>
   );
@@ -188,7 +189,8 @@ const TaskItem: React.FC<{
   onDelete: () => void;
   onUpdateTitle: (newTitle: string) => void;
   isPriorityList: boolean;
-}> = ({ task, onToggleStatus, onTogglePriority, onDelete, onUpdateTitle, isPriorityList }) => {
+  showDate?: boolean;
+}> = ({ task, onToggleStatus, onTogglePriority, onDelete, onUpdateTitle, isPriorityList, showDate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(task.title);
 
@@ -221,23 +223,32 @@ const TaskItem: React.FC<{
       </button>
       
       {/* 标题 */}
-      {isEditing ? (
-        <input
-          autoFocus
-          className="flex-1 text-sm font-medium bg-indigo-50 border-none outline-none focus:ring-0 p-0 text-slate-800"
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-        />
-      ) : (
-        <span 
-          onDoubleClick={() => setIsEditing(true)}
-          className={`flex-1 text-sm font-medium transition-all cursor-text ${task.status === TaskStatus.COMPLETED ? 'text-slate-400 line-through' : 'text-slate-800'}`}
-        >
-          {task.title}
-        </span>
-      )}
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            <input
+              autoFocus
+              className="flex-1 text-sm font-medium bg-indigo-50 border-none outline-none focus:ring-0 p-0 text-slate-800"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
+            />
+          ) : (
+            <span 
+              onDoubleClick={() => setIsEditing(true)}
+              className={`flex-1 text-sm font-medium transition-all cursor-text truncate ${task.status === TaskStatus.COMPLETED ? 'text-slate-400 line-through' : 'text-slate-800'}`}
+            >
+              {task.title}
+            </span>
+          )}
+          {showDate && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-normal whitespace-nowrap">
+              {task.date.split('-').slice(1).join('/')}
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* 操作区 */}
       <div className="flex items-center gap-1">
