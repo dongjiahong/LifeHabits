@@ -22,6 +22,7 @@
 ## Interaction Principles
 - **Minimalism First**: 每个界面只保留最核心的操作。非高频功能应通过二级菜单或长按呼出。
 - **Physical Feedback**: 习惯花园中的“豆子”下落应有物理规律的动态反馈，增强交互的真实感。
+- **Desktop Adaptive**: 在桌面端采用受限宽度的居中容器布局，通过悬浮态 (Hover) 增强和微量缩放动画提升桌面鼠标操作的愉悦度与反馈感。
 - **Local-First Speed**: 所有的操作必须是瞬时完成的，不应因为等待网络同步而产生阻塞感。
 
 ## AI Interaction Logic

@@ -70,7 +70,7 @@ export const HabitModule: React.FC = () => {
            <div 
              key={habit.id}
              onClick={() => handleOpenDetail(habit.id!)}
-             className={`relative bg-white/80 backdrop-blur rounded-2xl p-4 shadow-sm border border-white/60 hover:shadow-md transition-all cursor-pointer flex flex-col items-center gap-3 overflow-hidden ${habit.isArchived ? 'ring-2 ring-amber-300 bg-amber-50/50' : ''}`}
+             className={`relative bg-white/80 backdrop-blur rounded-2xl p-4 shadow-sm border border-white/60 hover:shadow-md hover:scale-[1.02] hover:bg-white active:scale-[0.98] transition-all duration-300 cursor-pointer flex flex-col items-center gap-3 overflow-hidden group ${habit.isArchived ? 'ring-2 ring-amber-300 bg-amber-50/50' : ''}`}
            >
               {/* Formed Badge */}
               {habit.isArchived && (
@@ -347,7 +347,7 @@ const HabitDetail: React.FC<{ id: number; onBack: () => void }> = ({ id, onBack 
           <div className="flex gap-4 px-4 pb-2">
              <button 
                onClick={() => updateBeans('green')}
-               className="flex-1 bg-gradient-to-br from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 text-white py-3.5 rounded-2xl shadow-lg shadow-emerald-200/50 active:scale-95 transition-all flex items-center justify-center gap-2 group"
+               className="flex-1 bg-gradient-to-br from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 text-white py-3.5 rounded-2xl shadow-lg shadow-emerald-200/50 hover:shadow-emerald-300/60 active:scale-[0.98] hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-2 group"
              >
                 <div className="bg-white/20 p-1.5 rounded-full group-hover:scale-110 transition-transform">
                    <Plus size={16} strokeWidth={3} />
@@ -356,7 +356,7 @@ const HabitDetail: React.FC<{ id: number; onBack: () => void }> = ({ id, onBack 
              </button>
              <button 
                onClick={() => updateBeans('red')}
-               className="flex-1 bg-white hover:bg-rose-50 text-slate-600 border border-slate-200 hover:border-rose-200 py-3.5 rounded-2xl shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2"
+               className="flex-1 bg-white hover:bg-rose-50 text-slate-600 border border-slate-200 hover:border-rose-200 py-3.5 rounded-2xl shadow-sm hover:shadow-md active:scale-[0.98] hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-2"
              >
                 <span className="text-xl">💤</span>
                 <span className="font-bold text-sm">没做到</span>

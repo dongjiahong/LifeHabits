@@ -152,7 +152,7 @@ export const TodoModule: React.FC<TodoModuleProps> = ({ onNavigateToProject }) =
         <button 
           onClick={handleAddTask} 
           disabled={!newTask.trim()}
-          className="absolute right-2 top-2 bottom-2 w-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center transition-colors disabled:opacity-50 disabled:bg-slate-300"
+          className="absolute right-2 top-2 bottom-2 w-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-90 disabled:opacity-50 disabled:bg-slate-300 disabled:scale-100"
         >
           <Plus size={20} />
         </button>
@@ -255,7 +255,7 @@ const TaskItem: React.FC<{
   };
 
   return (
-    <div className={`group flex items-center p-3.5 bg-white rounded-xl transition-all duration-300 ${task.status === TaskStatus.COMPLETED ? 'opacity-60 bg-slate-50' : 'shadow-sm shadow-indigo-100 hover:shadow-md'}`}>
+    <div className={`group flex items-center p-3.5 bg-white rounded-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] ${task.status === TaskStatus.COMPLETED ? 'opacity-60 bg-slate-50' : 'shadow-sm shadow-indigo-100 hover:shadow-md hover:bg-white'}`}>
       {/* 勾选框 */}
       <button
         onClick={onToggleStatus}

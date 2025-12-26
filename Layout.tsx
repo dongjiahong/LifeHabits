@@ -57,13 +57,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex justify-center bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100">
-      <div className="w-full max-w-md h-screen flex flex-col shadow-2xl relative overflow-hidden bg-white/40 backdrop-blur-xl sm:rounded-3xl sm:h-[90vh] sm:my-auto sm:border sm:border-white/60">
-        
-        {/* 顶部装饰光斑 */}
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[30%] bg-purple-300/30 blur-3xl rounded-full pointer-events-none z-0" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[30%] bg-indigo-300/30 blur-3xl rounded-full pointer-events-none z-0" />
+    <div className="min-h-screen bg-slate-50 flex justify-center bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100 relative overflow-hidden">
+      {/* 顶部装饰光斑 */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[30%] bg-purple-300/30 blur-3xl rounded-full pointer-events-none z-0" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[30%] bg-indigo-300/30 blur-3xl rounded-full pointer-events-none z-0" />
 
+      <div className="w-full max-w-md sm:max-w-[520px] h-screen flex flex-col shadow-2xl relative overflow-hidden bg-white/40 backdrop-blur-xl sm:rounded-3xl sm:h-[90vh] sm:my-auto sm:border sm:border-white/60 z-10">
+        
         {/* 左上角功能区 (设置 & 同步 & Logo) */}
         <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
           {/* Logo 放在最左侧作为品牌标识 */}
@@ -76,8 +76,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
           {/* 设置按钮 */}
           <button 
             onClick={() => onTabChange('settings')}
-            className={`p-2 text-slate-500 hover:text-indigo-600 bg-white/50 backdrop-blur-md hover:bg-white/80 rounded-full transition-all shadow-sm border border-white/40 ${
-              activeTab === 'settings' ? 'text-indigo-600 bg-white shadow-md' : ''
+            className={`p-2 text-slate-500 hover:text-indigo-600 bg-white/50 backdrop-blur-md hover:bg-white/80 rounded-full transition-all duration-300 shadow-sm border border-white/40 hover:scale-110 active:scale-95 ${
+              activeTab === 'settings' ? 'text-indigo-600 bg-white shadow-md scale-105' : ''
             }`}
             aria-label="设置"
           >
@@ -88,7 +88,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
           <button 
             onClick={handleQuickSync}
             disabled={isSyncing}
-            className={`p-2 backdrop-blur-md rounded-full transition-all shadow-sm border border-white/40 ${
+            className={`p-2 backdrop-blur-md rounded-full transition-all duration-300 shadow-sm border border-white/40 hover:scale-110 active:scale-95 ${
               isSyncing 
                 ? 'bg-indigo-50 text-indigo-500 cursor-not-allowed'
                 : 'bg-white/50 hover:bg-white/80 text-slate-500 hover:text-blue-600'
@@ -157,7 +157,7 @@ const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.Re
       active ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
     }`}
   >
-    <div className={`p-1.5 rounded-xl transition-all duration-300 ${active ? 'bg-indigo-50 scale-110' : 'group-hover:bg-white/50'}`}>
+    <div className={`p-1.5 rounded-xl transition-all duration-300 ${active ? 'bg-indigo-50 scale-110' : 'group-hover:bg-white/50 group-hover:scale-110 group-active:scale-95'}`}>
       {icon}
     </div>
     <span className={`text-[9px] font-bold transition-all duration-300 ${active ? 'opacity-100 translate-y-0 h-auto' : 'opacity-0 -translate-y-2 h-0 overflow-hidden'}`}>
