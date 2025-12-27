@@ -1,5 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { db } from "../db";
+import { getHabits, getHabitLogsByDate } from "./habitService";
+import { getTodayStr } from "../utils";
 
 // 增加 contextData 参数，用于接收代办和记账数据
 export const generateDailyInsight = async (reviewContent: string, contextData: string = ''): Promise<string> => {
@@ -13,20 +15,51 @@ export const generateDailyInsight = async (reviewContent: string, contextData: s
 
   const systemPrompt = `
     你是一个温暖、充满智慧的人生教练。
-    请根据用户的【每日清单执行情况】、【记账数据】以及【深度复盘内容】，生成一段“每日洞察”。
+    请根据用户的【每日清单执行情况】、【记账数据】、【习惯打卡情况】以及【深度复盘内容】，生成一段“每日洞察”。
     
     要求：
-    1. 结合用户今天的实际行动数据（是否完成了重要任务、时间/金钱投入方向）和他的主观复盘思考进行综合点评。
+    1. 结合用户今天的实际行动数据（是否完成了重要任务、时间投入方向、习惯完成情况）和他的主观复盘思考进行综合点评和洞察或者启发。
     2. 如果用户说做到了但数据没显示，或者数据很好但用户很焦虑，请敏锐地指出这种反差。
     3. 语气亲切、鼓励，像老朋友一样。
-    4. 字数控制在 250 字以内，言简意赅。
+    4. 字数控制在 600 字以内，言简意赅。
     5. 使用 Markdown 格式。
   `;
+
+  // Fetch Habit Data
+  let habitContext = '';
+  try {
+      const todayStr = getTodayStr();
+      const habits = await getHabits();
+      const logs = await getHabitLogsByDate(todayStr);
+      
+      const activeHabits = habits.filter(h => !h.isArchived);
+      const doneCount = logs.filter(l => l.type === 'green').length;
+      const failCount = logs.filter(l => l.type === 'red').length;
+      
+      // Detailed status
+      const habitDetails = activeHabits.map(h => {
+          const log = logs.find(l => l.habitId === h.id);
+          const status = log ? (log.type === 'green' ? '✅ 完成' : '🔴 未完成') : '⬜️ 未打卡';
+          return `- ${h.name}: ${status}`;
+      }).join('\n');
+
+      habitContext = `
+【今日习惯打卡】
+- 活跃习惯数：${activeHabits.length}
+- 今日完成：${doneCount}
+- 今日未完成/跳过：${failCount}
+- 详情：
+${habitDetails}
+`;
+  } catch (e) {
+      console.error("Failed to fetch habits in aiService", e);
+  }
   
   // 组合用户内容
   const fullUserContent = `
 【今日客观数据】
 ${contextData}
+${habitContext}
 
 【今日主观复盘】
 ${reviewContent}

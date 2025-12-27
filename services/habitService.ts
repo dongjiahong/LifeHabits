@@ -87,3 +87,10 @@ export async function getHabitLogs(habitId: string): Promise<HabitLog[]> {
         .and(l => !l.isDeleted)
         .sortBy('createdAt');
 }
+
+export async function getHabitLogsByDate(date: string): Promise<HabitLog[]> {
+    return await db.habitLogs
+        .where('date').equals(date)
+        .and(l => !l.isDeleted)
+        .toArray();
+}
