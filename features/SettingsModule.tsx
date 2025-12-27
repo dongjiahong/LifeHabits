@@ -35,7 +35,7 @@ export const SettingsModule: React.FC = () => {
     try {
       const items = await db.settings.toArray();
       if (items.length > 0) {
-        await db.settings.update(items[0].id!, config);
+        await db.settings.update(items[0].id!, config as any);
       } else {
         await db.settings.add({ ...config, id: nanoid() });
       }

@@ -185,65 +185,81 @@ export class WebDAVService {
       );
     }
 
-    let downloadCount = 0;
-    let uploadCount = 0;
+    // 获取本地上次同步保存的 manifest 快照
+    const settings = await db.settings.toArray();
+    const lastSyncManifest = settings[0]?.lastSyncManifest ?? null;
 
-    // 关键修复：始终先下载远程数据并合并，再上传合并后的结果
-    // 这确保了不同设备创建的记录（即使内容相同但ID不同）都能正确保留
-    const criticalPaths = [
-      this.getFilePathForData("todo"),
-      this.getFilePathForData("habit"),
-      this.getFilePathForData("project"),
-      this.getFilePathForData("template"),
-    ];
+    // 生成当前本地数据的 manifest
+    const localManifest = await this.generateManifestFromLocalDB();
 
-    // 1. 下载所有 critical path 的远程数据并合并到本地
-    for (const path of criticalPaths) {
-      if (remoteManifest?.files[path]) {
-        await this.downloadAndApply(path);
-        downloadCount++;
-      }
-    }
-
-    // 同步当前周和上一周的账目和回顾数据
+    // 定义所有需要同步的路径
     const today = new Date().toISOString().split("T")[0];
     const currentWeek = getWeekStr(today);
     const prevDate = new Date();
     prevDate.setDate(prevDate.getDate() - 7);
     const prevWeek = getWeekStr(prevDate.toISOString().split("T")[0]);
 
-    const weeklyPaths = [
+    const allPaths = [
+      this.getFilePathForData("todo"),
+      this.getFilePathForData("habit"),
+      this.getFilePathForData("project"),
+      this.getFilePathForData("template"),
       this.getFilePathForData("accounting", currentWeek),
       this.getFilePathForData("accounting", prevWeek),
       this.getFilePathForData("review", currentWeek),
       this.getFilePathForData("review", prevWeek),
     ];
 
-    for (const path of weeklyPaths) {
-      if (remoteManifest?.files[path]) {
+    let downloadCount = 0;
+    let uploadCount = 0;
+    let skipCount = 0;
+
+    for (const path of allPaths) {
+      const localFileInfo = localManifest.files[path];
+      const remoteFileInfo = remoteManifest?.files[path];
+      const lastSyncFileInfo = lastSyncManifest?.files[path];
+
+      const localUpdatedAt = localFileInfo?.updatedAt || 0;
+      const remoteUpdatedAt = remoteFileInfo?.updatedAt || 0;
+      const lastSyncUpdatedAt = lastSyncFileInfo?.updatedAt || 0;
+
+      // 判断是否需要下载：远程比上次同步时新
+      const needDownload = remoteUpdatedAt > lastSyncUpdatedAt;
+      // 判断是否需要上传：本地比上次同步时新
+      const needUpload = localUpdatedAt > lastSyncUpdatedAt;
+
+      if (needDownload && remoteFileInfo) {
+        // 远程有更新，先下载合并
+        console.log(`[Sync] 下载远程更新: ${path}`);
         await this.downloadAndApply(path);
         downloadCount++;
       }
+
+      if (needUpload || needDownload) {
+        // 本地有更新或刚下载合并了远程数据，需要上传
+        console.log(`[Sync] 上传本地数据: ${path}`);
+        await this.uploadShard(path);
+        uploadCount++;
+      } else if (!needDownload && !needUpload) {
+        console.log(`[Sync] 跳过无变化: ${path}`);
+        skipCount++;
+      }
     }
 
-    // 2. 上传合并后的本地数据
-    for (const path of criticalPaths) {
-      await this.uploadShard(path);
-      uploadCount++;
-    }
-
-    // 上传当前周和上周的账目和回顾
-    for (const path of weeklyPaths) {
-      await this.uploadShard(path);
-      uploadCount++;
-    }
-
-    // 更新 manifest
+    // 重新生成 manifest 并更新
     const finalManifest = await this.generateManifestFromLocalDB();
     await this.updateManifest(finalManifest);
 
+    // 保存本次同步后的 manifest 快照到本地
+    if (settings.length > 0) {
+      await db.settings.update(settings[0].id!, {
+        lastSyncManifest: finalManifest,
+        lastSyncTime: Date.now(),
+      });
+    }
+
     if (downloadCount === 0 && uploadCount === 0) return "数据已是最新";
-    return `同步完成！下载并合并了 ${downloadCount} 个分片，上传了 ${uploadCount} 个分片。`;
+    return `同步完成！下载 ${downloadCount} 个，上传 ${uploadCount} 个，跳过 ${skipCount} 个无变化分片。`;
   }
 
   async lazyDownloadIfNeeded(weekStr: string): Promise<void> {

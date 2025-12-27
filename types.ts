@@ -132,6 +132,17 @@ export interface AppSettings {
   webdavUsername?: string;
   webdavPassword?: string;
   lastSyncTime?: number;
+  // 上次成功同步后的 manifest 快照，用于增量同步
+  lastSyncManifest?: {
+    version: number;
+    lastUpdated: number;
+    files: {
+      [filePath: string]: {
+        updatedAt: number;
+        size?: number;
+      };
+    };
+  };
 }
 
 export interface Habit {
