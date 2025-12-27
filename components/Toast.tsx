@@ -46,28 +46,27 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <ToastContext.Provider value={{ showToast, hideToast }}>
       {children}
-      {/* 调整 top 位置，从 top-12 改为 top-24，大幅下移避免遮挡 */}
-      <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 w-full max-w-xs px-4 pointer-events-none">
+      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-1.5 w-auto max-w-[240px] pointer-events-none">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-center p-4 rounded-xl shadow-lg border backdrop-blur-md animate-fade-in-down transition-all ${
+            className={`pointer-events-auto flex items-center p-2 rounded-lg shadow-md border backdrop-blur-md animate-fade-in-down transition-all ${
               toast.type === 'success' ? 'bg-white/90 border-green-200 text-green-800' :
               toast.type === 'error' ? 'bg-white/90 border-red-200 text-red-800' :
               toast.type === 'loading' ? 'bg-indigo-600/90 border-indigo-500 text-white' :
               'bg-white/90 border-slate-200 text-slate-800'
             }`}
           >
-            <div className="mr-3 flex-shrink-0">
-              {toast.type === 'success' && <CheckCircle size={20} />}
-              {toast.type === 'error' && <AlertCircle size={20} />}
-              {toast.type === 'info' && <Info size={20} />}
-              {toast.type === 'loading' && <Loader2 size={20} className="animate-spin" />}
+            <div className="mr-1.5 flex-shrink-0">
+              {toast.type === 'success' && <CheckCircle size={14} />}
+              {toast.type === 'error' && <AlertCircle size={14} />}
+              {toast.type === 'info' && <Info size={14} />}
+              {toast.type === 'loading' && <Loader2 size={14} className="animate-spin" />}
             </div>
-            <p className="text-sm font-medium flex-1">{toast.message}</p>
+            <p className="text-[11px] font-medium flex-1 leading-tight">{toast.message}</p>
             {toast.type !== 'loading' && (
-              <button onClick={() => hideToast(toast.id)} className="ml-2 opacity-50 hover:opacity-100">
-                <X size={16} />
+              <button onClick={() => hideToast(toast.id)} className="ml-1.5 opacity-50 hover:opacity-100">
+                <X size={12} />
               </button>
             )}
           </div>
