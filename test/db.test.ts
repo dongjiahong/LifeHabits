@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { nanoid } from 'nanoid';
 import { db } from '../db';
 import { clearDatabase } from './db-test-utils';
+import { TaskStatus } from '../types';
 
 describe('Database Mock', () => {
   beforeEach(async () => {
@@ -9,29 +11,33 @@ describe('Database Mock', () => {
 
   it('should be able to add and retrieve a task', async () => {
     const task = {
-      text: 'Test Task',
+      id: nanoid(),
+      title: 'Test Task',
       date: '2025-12-25',
-      status: 'pending' as const,
+      status: TaskStatus.PENDING,
       isPriority: true,
       createdAt: Date.now(),
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      isDeleted: false
     };
 
     const id = await db.tasks.add(task);
     const retrievedTask = await db.tasks.get(id);
 
     expect(retrievedTask).toBeDefined();
-    expect(retrievedTask?.text).toBe('Test Task');
+    expect(retrievedTask?.title).toBe('Test Task');
   });
 
   it('should clear database correctly', async () => {
     await db.tasks.add({
-      text: 'Cleanup Task',
+      id: nanoid(),
+      title: 'Cleanup Task',
       date: '2025-12-25',
-      status: 'pending' as const,
+      status: TaskStatus.PENDING,
       isPriority: false,
       createdAt: Date.now(),
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      isDeleted: false
     });
 
     await clearDatabase();

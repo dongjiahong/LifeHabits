@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import { nanoid } from 'nanoid';
 import { db } from '../db';
 import { AppSettings } from '../types';
 import { Button, Input, Select } from '../components/UIComponents';
@@ -37,7 +37,7 @@ export const SettingsModule: React.FC = () => {
       if (items.length > 0) {
         await db.settings.update(items[0].id!, config);
       } else {
-        await db.settings.add(config);
+        await db.settings.add({ ...config, id: nanoid() });
       }
       showToast('设置已保存', 'success');
     } catch (e) {

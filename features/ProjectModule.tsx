@@ -10,7 +10,7 @@ import { useToast } from '../components/Toast';
 import { useLiveQuery } from 'dexie-react-hooks';
 
 interface ProjectModuleProps {
-  initialProjectId?: number | null;
+  initialProjectId?: string | null;
 }
 
 export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }) => {
@@ -20,7 +20,7 @@ export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { showToast } = useToast();
-  const lastHandledProjectId = React.useRef<number | null>(null);
+  const lastHandledProjectId = React.useRef<string | null>(null);
 
   // Handle initial project selection
   useEffect(() => {
@@ -40,7 +40,7 @@ export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }
       db.smallGoals.filter(sg => !!sg.isMilestone).toArray()
     ]);
 
-    const stats: Record<number, { total: number, completed: number }> = {};
+    const stats: Record<string, { total: number, completed: number }> = {};
     
     const allMilestones = [...bgs, ...sgs];
     
@@ -96,8 +96,8 @@ export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }
     if (!formData.name.trim()) return;
 
     try {
-      if (editingProject) {
-        await updateProject(editingProject.id!, formData);
+      if (editingProject && editingProject.id) {
+        await updateProject(editingProject.id, formData);
         showToast('项目已更新', 'success');
       } else {
         await addProject({
@@ -115,10 +115,10 @@ export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }
   };
 
   const handleDeleteProject = async () => {
-    if (!editingProject) return;
+    if (!editingProject || !editingProject.id) return;
     if (confirm('确定要删除这个项目及其所有目标和任务吗？此操作不可恢复。')) {
       try {
-        await deleteProject(editingProject.id!);
+        await deleteProject(editingProject.id);
         showToast('项目已删除', 'success');
         setIsModalOpen(false);
         loadProjects();
@@ -180,7 +180,7 @@ export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }
             <ProjectCard 
               key={project.id} 
               project={project} 
-              milestoneStats={milestoneStats?.[project.id!]}
+              milestoneStats={project.id ? milestoneStats?.[project.id] : undefined}
               onEdit={() => handleOpenModal(project)}
               onClick={() => setSelectedProject(project)}
             />

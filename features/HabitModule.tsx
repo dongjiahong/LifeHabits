@@ -11,7 +11,7 @@ const EMOJI_PRESETS = ['💧', '🏃', '📚', '🧘', '🚭', '🥦', '🎹', '
 
 export const HabitModule: React.FC = () => {
   const [view, setView] = useState<'list' | 'detail'>('list');
-  const [selectedHabitId, setSelectedHabitId] = useState<number | null>(null);
+  const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   
   // Create Habit State
@@ -41,7 +41,7 @@ export const HabitModule: React.FC = () => {
     showToast('新习惯已种下 🌱', 'success');
   };
 
-  const handleOpenDetail = (id: number) => {
+  const handleOpenDetail = (id: string) => {
     setSelectedHabitId(id);
     setView('detail');
   };
@@ -69,7 +69,7 @@ export const HabitModule: React.FC = () => {
         {habits?.map(habit => (
            <div 
              key={habit.id}
-             onClick={() => handleOpenDetail(habit.id!)}
+             onClick={() => habit.id && handleOpenDetail(habit.id)}
              className={`relative bg-white/80 backdrop-blur rounded-2xl p-4 shadow-sm border border-white/60 hover:shadow-md hover:scale-[1.02] hover:bg-white active:scale-[0.98] transition-all duration-300 cursor-pointer flex flex-col items-center gap-3 overflow-hidden group ${habit.isArchived ? 'ring-2 ring-amber-300 bg-amber-50/50' : ''}`}
            >
               {/* Formed Badge */}
@@ -157,7 +157,7 @@ export const HabitModule: React.FC = () => {
   );
 };
 
-const HabitDetail: React.FC<{ id: number; onBack: () => void }> = ({ id, onBack }) => {
+const HabitDetail: React.FC<{ id: string; onBack: () => void }> = ({ id, onBack }) => {
   const habit = useLiveQuery(() => getHabit(id), [id]);
   const logs = useLiveQuery(() => getHabitLogs(id), [id]);
   const { showToast } = useToast();
@@ -204,7 +204,7 @@ const HabitDetail: React.FC<{ id: number; onBack: () => void }> = ({ id, onBack 
     // 如果有日志，直接根据日志生成，这样就是严格的“添加顺序”
     if (logs && logs.length > 0) {
       return logs.map((log, index) => ({
-        id: log.id || index,
+        id: log.id || index.toString(),
         type: log.type,
         // 根据索引生成确定的形状，避免闪烁，但保持有机感
         rotation: (index * 137) % 360, // 黄金角，分布均匀
@@ -223,7 +223,7 @@ const HabitDetail: React.FC<{ id: number; onBack: () => void }> = ({ id, onBack 
     ];
     
     return arr.map((type, idx) => ({
-        id: idx,
+        id: idx.toString(),
         type,
         rotation: (idx * 137) % 360,
         borderRadius: [

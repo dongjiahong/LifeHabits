@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid';
 import { Habit, HabitLog } from '../types';
 import { db } from '../db';
 
@@ -27,24 +28,27 @@ export function calculateHabitUpdate(habit: Habit, type: 'green' | 'red'): { hab
 
 // DAO Methods
 
-export async function addHabit(habit: Omit<Habit, 'id'>): Promise<number> {
+export async function addHabit(habit: Omit<Habit, 'id'>): Promise<string> {
+    const id = nanoid();
     const newHabit = {
         ...habit,
+        id,
         createdAt: habit.createdAt || Date.now(),
         updatedAt: Date.now(),
         isDeleted: false
     };
-    return await db.habits.add(newHabit);
+    await db.habits.add(newHabit);
+    return id;
 }
 
-export async function updateHabit(id: number, updates: Partial<Habit>): Promise<void> {
+export async function updateHabit(id: string, updates: Partial<Habit>): Promise<void> {
     await db.habits.update(id, {
         ...updates,
         updatedAt: Date.now()
     });
 }
 
-export async function deleteHabit(id: number): Promise<void> {
+export async function deleteHabit(id: string): Promise<void> {
     await db.habits.update(id, {
         isDeleted: true,
         updatedAt: Date.now()
@@ -58,23 +62,26 @@ export async function getHabits(): Promise<Habit[]> {
         .toArray();
 }
 
-export async function getHabit(id: number): Promise<Habit | undefined> {
+export async function getHabit(id: string): Promise<Habit | undefined> {
     const habit = await db.habits.get(id);
     if (habit?.isDeleted) return undefined;
     return habit;
 }
 
-export async function addHabitLog(log: Omit<HabitLog, 'id'>): Promise<number> {
+export async function addHabitLog(log: Omit<HabitLog, 'id'>): Promise<string> {
+    const id = nanoid();
     const newLog = {
         ...log,
+        id,
         createdAt: log.createdAt || Date.now(),
         updatedAt: Date.now(),
         isDeleted: false
     };
-    return await db.habitLogs.add(newLog);
+    await db.habitLogs.add(newLog);
+    return id;
 }
 
-export async function getHabitLogs(habitId: number): Promise<HabitLog[]> {
+export async function getHabitLogs(habitId: string): Promise<HabitLog[]> {
     return await db.habitLogs
         .where('habitId').equals(habitId)
         .and(l => !l.isDeleted)

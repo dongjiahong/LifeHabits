@@ -17,7 +17,7 @@ import { getWeekStr } from '../utils';
 export const ReviewModule: React.FC = () => {
   const todayStr = getTodayStr();
   const [view, setView] = useState<'daily' | 'history' | 'create-template'>('daily');
-  const [activeTemplateId, setActiveTemplateId] = useState<number | null>(null);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -54,14 +54,14 @@ export const ReviewModule: React.FC = () => {
       }
     } else if (templates && templates.length > 0 && activeTemplateId === null) {
       const defaultTpl = templates.find(t => t.isDefault) || templates[0];
-      setActiveTemplateId(defaultTpl.id!);
+      if (defaultTpl.id) setActiveTemplateId(defaultTpl.id);
     }
   }, [todayReview, templates]);
 
   const currentTemplate = templates?.find(t => t.id === activeTemplateId);
 
   const handleSave = async () => {
-    if (!currentTemplate) return;
+    if (!currentTemplate || !currentTemplate.id) return;
     
     const answersArray = currentTemplate.questions.map(q => ({
       question: q,
@@ -201,8 +201,10 @@ export const ReviewModule: React.FC = () => {
           <button
             key={tpl.id}
             onClick={() => {
-              setActiveTemplateId(tpl.id!);
-              if (!todayReview) setAnswers({});
+              if (tpl.id) {
+                setActiveTemplateId(tpl.id);
+                if (!todayReview) setAnswers({});
+              }
             }}
             className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${activeTemplateId === tpl.id 
                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200' 

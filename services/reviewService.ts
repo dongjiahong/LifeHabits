@@ -1,17 +1,21 @@
+import { nanoid } from 'nanoid';
 import { Review, ReviewTemplate } from '../types';
 import { db } from '../db';
 
-export async function addReview(review: Omit<Review, 'id'>): Promise<number> {
+export async function addReview(review: Omit<Review, 'id'>): Promise<string> {
+    const id = nanoid();
     const newReview = {
         ...review,
+        id,
         createdAt: review.createdAt || Date.now(),
         updatedAt: Date.now(),
         isDeleted: false
     };
-    return await db.reviews.add(newReview);
+    await db.reviews.add(newReview);
+    return id;
 }
 
-export async function updateReview(id: number, updates: Partial<Review>): Promise<void> {
+export async function updateReview(id: string, updates: Partial<Review>): Promise<void> {
     await db.reviews.update(id, {
         ...updates,
         updatedAt: Date.now()
@@ -32,14 +36,17 @@ export async function getReviews(): Promise<Review[]> {
         .toArray();
 }
 
-export async function addTemplate(template: Omit<ReviewTemplate, 'id'>): Promise<number> {
+export async function addTemplate(template: Omit<ReviewTemplate, 'id'>): Promise<string> {
+    const id = nanoid();
     const newTemplate = {
         ...template,
+        id,
         createdAt: template.createdAt || Date.now(),
         updatedAt: Date.now(),
         isDeleted: false
     };
-    return await db.templates.add(newTemplate);
+    await db.templates.add(newTemplate);
+    return id;
 }
 
 export async function getTemplates(): Promise<ReviewTemplate[]> {

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { nanoid } from 'nanoid';
 import { WebDAVService, SyncManifest } from '../services/webdavService';
 import { db } from '../db';
 import { clearDatabase } from './db-test-utils';
@@ -22,6 +23,7 @@ describe('Sync Engine Core', () => {
     // Add a task
     const now = Date.now();
     await db.tasks.add({
+      id: nanoid(),
       title: 'Task 1',
       date: '2025-12-25',
       status: TaskStatus.PENDING,
@@ -32,6 +34,7 @@ describe('Sync Engine Core', () => {
 
     // Add a log
     await db.logs.add({
+      id: nanoid(),
       type: LogType.TIME,
       name: 'Work',
       value: 60,
@@ -55,7 +58,7 @@ describe('Sync Engine Core', () => {
     const service = new WebDAVService(mockConfig);
     
     const local: SyncManifest = {
-      version: 2,
+      version: 3,
       lastUpdated: 1000,
       files: {
         'life-habits-data/todo/all.json': { updatedAt: 500 },
@@ -64,7 +67,7 @@ describe('Sync Engine Core', () => {
     };
 
     const remote: SyncManifest = {
-      version: 2,
+      version: 3,
       lastUpdated: 2000,
       files: {
         'life-habits-data/todo/all.json': { updatedAt: 600 }, // Remote newer
@@ -85,12 +88,14 @@ describe('Sync Engine Core', () => {
     expect(reviewAction?.type).toBe('download');
   });
 
-  it('lwwSyncTable should handle template name conflicts correctly', async () => {
+  it('lwwSyncTable should handle template update correctly', async () => {
     const service = new WebDAVService(mockConfig);
     
     // 1. Pre-populate local templates
     const t1CreatedAt = 1000;
+    const commonId = nanoid();
     await db.templates.add({
+      id: commonId,
       name: 'Template A',
       questions: ['Q1'],
       createdAt: t1CreatedAt,
@@ -98,26 +103,23 @@ describe('Sync Engine Core', () => {
       isDeleted: false
     });
 
-    // 2. Remote has a template with same name but different createdAt
-    const t2CreatedAt = 2000;
+    // 2. Remote has the SAME template (same ID) with updates
     const remoteItems = [
       {
-        name: 'Template A', // Same name
+        id: commonId,
+        name: 'Template A', 
         questions: ['Q1 updated'],
-        createdAt: t2CreatedAt, // Different createdAt
-        updatedAt: 3000,
+        createdAt: t1CreatedAt,
+        updatedAt: 3000, // Newer
         isDeleted: false
       }
     ];
 
-    // This should NOT throw ConstraintError and should update the local item (or at least handle it)
     await (service as any).lwwSyncTable(db.templates, remoteItems);
 
     const localItems = await db.templates.toArray();
-    // It should have matched by name and updated the existing one OR merged them?
-    // According to my fix, it matches by name if createdAt not found.
     expect(localItems.length).toBe(1);
-    expect(localItems[0].name).toBe('Template A');
+    expect(localItems[0].id).toBe(commonId);
     expect(localItems[0].questions).toContain('Q1 updated');
     expect(localItems[0].updatedAt).toBe(3000);
   });

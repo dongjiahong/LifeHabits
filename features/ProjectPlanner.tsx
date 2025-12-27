@@ -22,29 +22,32 @@ export const ProjectPlanner: React.FC<ProjectPlannerProps> = ({ project, onBack 
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [modalContext, setModalContext] = useState<{
     type: 'big' | 'small' | 'task';
-    parentId?: number;
-    editingId?: number;
+    parentId?: string;
+    editingId?: string;
   } | null>(null);
   const [goalName, setGoalName] = useState('');
-  const [tasks, setTasks] = useState<Record<number, Task[]>>({}); // smallGoalId -> Task[]
+  const [tasks, setTasks] = useState<Record<string, Task[]>>({}); // smallGoalId -> Task[]
   
   const { showToast } = useToast();
 
   const loadData = async () => {
-    const bgs = await getBigGoals(project.id!);
+    if (!project.id) return;
+    const bgs = await getBigGoals(project.id);
     setBigGoals(bgs.sort((a, b) => a.createdAt - b.createdAt));
     
     // Load all small goals and tasks in parallel for simplicity
-    const taskMap: Record<number, Task[]> = {};
+    const taskMap: Record<string, Task[]> = {};
     for (const bg of bgs) {
-      const sgs = await getSmallGoals(bg.id!);
+      if (!bg.id) continue;
+      const sgs = await getSmallGoals(bg.id);
       for (const sg of sgs) {
+        if (!sg.id) continue;
         const sgTasks = await db.tasks
           .where('smallGoalId')
-          .equals(sg.id!)
+          .equals(sg.id)
           .filter(t => !t.isDeleted)
           .toArray();
-        taskMap[sg.id!] = sgTasks.sort((a, b) => a.createdAt - b.createdAt);
+        taskMap[sg.id] = sgTasks.sort((a, b) => a.createdAt - b.createdAt);
       }
     }
     setTasks(taskMap);
@@ -60,13 +63,13 @@ export const ProjectPlanner: React.FC<ProjectPlannerProps> = ({ project, onBack 
     setIsGoalModalOpen(true);
   };
 
-  const handleAddSmallGoal = (bigGoalId: number) => {
+  const handleAddSmallGoal = (bigGoalId: string) => {
     setModalContext({ type: 'small', parentId: bigGoalId });
     setGoalName('');
     setIsGoalModalOpen(true);
   };
 
-  const handleAddTask = (smallGoalId: number) => {
+  const handleAddTask = (smallGoalId: string) => {
     setModalContext({ type: 'task', parentId: smallGoalId });
     setGoalName('');
     setIsGoalModalOpen(true);
@@ -75,20 +78,22 @@ export const ProjectPlanner: React.FC<ProjectPlannerProps> = ({ project, onBack 
   const handleModalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!goalName.trim() || !modalContext) return;
+    if (!project.id) return;
 
     try {
       if (modalContext.type === 'big') {
         await addBigGoal({
-          projectId: project.id!,
+          projectId: project.id,
           name: goalName,
           status: ProjectStatus.IN_PROGRESS,
           progress: 0,
           createdAt: Date.now()
         });
       } else if (modalContext.type === 'small') {
+        if (!modalContext.parentId) return;
         await addSmallGoal({
-          projectId: project.id!,
-          bigGoalId: modalContext.parentId!,
+          projectId: project.id,
+          bigGoalId: modalContext.parentId,
           name: goalName,
           status: ProjectStatus.IN_PROGRESS,
           progress: 0,
@@ -96,16 +101,17 @@ export const ProjectPlanner: React.FC<ProjectPlannerProps> = ({ project, onBack 
           createdAt: Date.now()
         });
       } else if (modalContext.type === 'task') {
+        if (!modalContext.parentId) return;
         // Find bigGoalId for this small goal
-        const sg = await db.smallGoals.get(modalContext.parentId!);
+        const sg = await db.smallGoals.get(modalContext.parentId);
         await addTask({
           title: goalName,
           status: TaskStatus.PENDING,
           date: new Date().toISOString().split('T')[0],
           isPriority: false,
-          projectId: project.id!,
+          projectId: project.id,
           bigGoalId: sg?.bigGoalId,
-          smallGoalId: modalContext.parentId!,
+          smallGoalId: modalContext.parentId,
           createdAt: Date.now()
         });
       }
@@ -119,52 +125,55 @@ export const ProjectPlanner: React.FC<ProjectPlannerProps> = ({ project, onBack 
   };
 
   const toggleTaskStatus = async (task: Task) => {
+    if (!task.id) return;
     const newStatus = task.status === TaskStatus.COMPLETED ? TaskStatus.PENDING : TaskStatus.COMPLETED;
-    await updateTask(task.id!, { status: newStatus });
+    await updateTask(task.id, { status: newStatus });
     loadData(); // This will also trigger progress calculation via Service
   };
 
-  const handleDeleteBigGoal = async (id: number) => {
+  const handleDeleteBigGoal = async (id: string) => {
     if (confirm('确定要删除这个大目标及其下属所有内容吗？')) {
       await deleteBigGoal(id);
-      await calculateProjectProgress(project.id!);
+      if (project.id) await calculateProjectProgress(project.id);
       loadData();
     }
   };
 
-  const handleDeleteSmallGoal = async (id: number) => {
+  const handleDeleteSmallGoal = async (id: string) => {
     if (confirm('确定要删除这个小目标及其任务吗？')) {
       await deleteSmallGoal(id);
-      await calculateProjectProgress(project.id!);
+      if (project.id) await calculateProjectProgress(project.id);
       loadData();
     }
   };
 
-  const handleUpdateBigGoalTitle = async (id: number, newTitle: string) => {
+  const handleUpdateBigGoalTitle = async (id: string, newTitle: string) => {
     await updateBigGoal(id, { name: newTitle });
     loadData();
   };
 
-  const handleUpdateSmallGoalTitle = async (id: number, newTitle: string) => {
+  const handleUpdateSmallGoalTitle = async (id: string, newTitle: string) => {
     await updateSmallGoal(id, { name: newTitle });
     loadData();
   };
 
-  const handleDeleteTask = async (taskId: number) => {
+  const handleDeleteTask = async (taskId: string) => {
     if (confirm('确定要删除这个任务吗？')) {
       await deleteTask(taskId);
-      await calculateProjectProgress(project.id!);
+      if (project.id) await calculateProjectProgress(project.id);
       loadData();
     }
   };
 
   const toggleMilestone = async (sg: SmallGoal) => {
-    await updateSmallGoal(sg.id!, { isMilestone: !sg.isMilestone });
+    if (!sg.id) return;
+    await updateSmallGoal(sg.id, { isMilestone: !sg.isMilestone });
     loadData();
   };
 
   const toggleBigGoalMilestone = async (bg: BigGoal) => {
-    await updateBigGoal(bg.id!, { isMilestone: !bg.isMilestone });
+    if (!bg.id) return;
+    await updateBigGoal(bg.id, { isMilestone: !bg.isMilestone });
     loadData();
   };
 
@@ -203,22 +212,24 @@ export const ProjectPlanner: React.FC<ProjectPlannerProps> = ({ project, onBack 
             key={bg.id} 
             goal={bg} 
             isBig 
-            onAddSub={() => handleAddSmallGoal(bg.id!)}
+            onAddSub={() => bg.id && handleAddSmallGoal(bg.id)}
             onEdit={() => toggleBigGoalMilestone(bg)}
-            onDelete={() => handleDeleteBigGoal(bg.id!)}
-            onUpdateTitle={(title) => handleUpdateBigGoalTitle(bg.id!, title)}
+            onDelete={() => bg.id && handleDeleteBigGoal(bg.id)}
+            onUpdateTitle={(title) => bg.id && handleUpdateBigGoalTitle(bg.id, title)}
           >
-            <BigGoalContent 
-              bgId={bg.id!} 
-              project={project} 
-              tasks={tasks} 
-              toggleMilestone={toggleMilestone} 
-              onDeleteSmallGoal={handleDeleteSmallGoal} 
-              onUpdateSmallGoalTitle={handleUpdateSmallGoalTitle}
-              toggleTaskStatus={toggleTaskStatus} 
-              onAddTask={handleAddTask} 
-              onDeleteTask={handleDeleteTask}
-            />
+            {bg.id && (
+              <BigGoalContent 
+                bgId={bg.id} 
+                project={project} 
+                tasks={tasks} 
+                toggleMilestone={toggleMilestone} 
+                onDeleteSmallGoal={handleDeleteSmallGoal} 
+                onUpdateSmallGoalTitle={handleUpdateSmallGoalTitle}
+                toggleTaskStatus={toggleTaskStatus} 
+                onAddTask={handleAddTask} 
+                onDeleteTask={handleDeleteTask}
+              />
+            )}
           </GoalItem>
         ))}
 
@@ -254,15 +265,15 @@ export const ProjectPlanner: React.FC<ProjectPlannerProps> = ({ project, onBack 
 
 // Helper component for Big Goal content to manage its own small goals
 const BigGoalContent: React.FC<{ 
-  bgId: number, 
+  bgId: string, 
   project: Project, 
-  tasks: Record<number, Task[]>,
+  tasks: Record<string, Task[]>,
   toggleMilestone: (sg: SmallGoal) => void,
-  onDeleteSmallGoal: (id: number) => void,
-  onUpdateSmallGoalTitle: (id: number, title: string) => void,
+  onDeleteSmallGoal: (id: string) => void,
+  onUpdateSmallGoalTitle: (id: string, title: string) => void,
   toggleTaskStatus: (task: Task) => void,
-  onAddTask: (id: number) => void,
-  onDeleteTask: (id: number) => void
+  onAddTask: (id: string) => void,
+  onDeleteTask: (id: string) => void
 }> = ({ bgId, project, tasks, toggleMilestone, onDeleteSmallGoal, onUpdateSmallGoalTitle, toggleTaskStatus, onAddTask, onDeleteTask }) => {
   const [smallGoals, setSmallGoals] = useState<SmallGoal[]>([]);
 
@@ -277,12 +288,12 @@ const BigGoalContent: React.FC<{
           key={sg.id} 
           goal={sg} 
           onEdit={() => toggleMilestone(sg)} 
-          onDelete={() => onDeleteSmallGoal(sg.id!)}
-          onUpdateTitle={(title) => onUpdateSmallGoalTitle(sg.id!, title)}
+          onDelete={() => sg.id && onDeleteSmallGoal(sg.id)}
+          onUpdateTitle={(title) => sg.id && onUpdateSmallGoalTitle(sg.id, title)}
         >
           {/* Inline Task List */}
           <div className="ml-8 mt-1 space-y-2 mb-4">
-            {(tasks[sg.id!] || []).map(task => (
+            {sg.id && (tasks[sg.id] || []).map(task => (
               <div key={task.id} className="flex items-center gap-2 group">
                 <button 
                   onClick={() => toggleTaskStatus(task)}
@@ -294,19 +305,21 @@ const BigGoalContent: React.FC<{
                   {task.title}
                 </span>
                 <button 
-                  onClick={() => onDeleteTask(task.id!)}
+                  onClick={() => task.id && onDeleteTask(task.id)}
                   className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-rose-400 transition-opacity"
                 >
                   <Trash2 size={14} />
                 </button>
               </div>
             ))}
-            <button 
-              onClick={() => onAddTask(sg.id!)}
-              className="w-full flex items-center justify-center gap-2 text-xs text-slate-400 hover:text-indigo-600 hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-lg py-2 mt-2 transition-all"
-            >
-              <Plus size={14} /> 添加待办任务
-            </button>
+            {sg.id && (
+              <button 
+                onClick={() => onAddTask(sg.id!)}
+                className="w-full flex items-center justify-center gap-2 text-xs text-slate-400 hover:text-indigo-600 hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-lg py-2 mt-2 transition-all"
+              >
+                <Plus size={14} /> 添加待办任务
+              </button>
+            )}
           </div>
         </GoalItem>
       ))}

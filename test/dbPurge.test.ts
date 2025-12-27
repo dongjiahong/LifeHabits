@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { nanoid } from 'nanoid';
 import { db, purgeDeletedData } from '../db';
 import { clearDatabase } from './db-test-utils';
 import { TaskStatus } from '../types';
@@ -11,6 +12,7 @@ describe('Database Purge', () => {
   it('should permanently delete items marked as isDeleted', async () => {
     // Add an active task
     await db.tasks.add({
+      id: nanoid(),
       title: 'Active Task',
       status: TaskStatus.PENDING,
       date: '2025-12-25',
@@ -21,6 +23,7 @@ describe('Database Purge', () => {
 
     // Add a deleted task
     await db.tasks.add({
+      id: nanoid(),
       title: 'Deleted Task',
       status: TaskStatus.PENDING,
       date: '2025-12-25',

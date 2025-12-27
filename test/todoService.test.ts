@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { nanoid } from 'nanoid';
 import { db } from '../db';
 import { clearDatabase } from './db-test-utils';
 import { addTask, updateTask, deleteTask, getTasks } from '../services/todoService';
@@ -23,7 +24,9 @@ describe('Todo Service DAO', () => {
   });
 
   it('should soft delete a task', async () => {
-    const id = await db.tasks.add({
+    const id = nanoid();
+    await db.tasks.add({
+      id,
       title: 'To Delete',
       status: TaskStatus.PENDING,
       date: '2025-12-25',
@@ -41,8 +44,8 @@ describe('Todo Service DAO', () => {
 
   it('should not return deleted tasks in getTasks', async () => {
     await db.tasks.bulkAdd([
-      { title: 'Active', status: TaskStatus.PENDING, date: '2025-12-25', isPriority: false, createdAt: Date.now(), isDeleted: false },
-      { title: 'Deleted', status: TaskStatus.PENDING, date: '2025-12-25', isPriority: false, createdAt: Date.now(), isDeleted: true }
+      { id: nanoid(), title: 'Active', status: TaskStatus.PENDING, date: '2025-12-25', isPriority: false, createdAt: Date.now(), isDeleted: false },
+      { id: nanoid(), title: 'Deleted', status: TaskStatus.PENDING, date: '2025-12-25', isPriority: false, createdAt: Date.now(), isDeleted: true }
     ]);
 
     const tasks = await getTasks('2025-12-25');
@@ -52,9 +55,9 @@ describe('Todo Service DAO', () => {
 
   it('should return overdue pending tasks when includeOverdue is true', async () => {
     await db.tasks.bulkAdd([
-      { title: 'Yesterday Pending', status: TaskStatus.PENDING, date: '2025-12-24', isPriority: false, createdAt: Date.now(), isDeleted: false },
-      { title: 'Yesterday Completed', status: TaskStatus.COMPLETED, date: '2025-12-24', isPriority: false, createdAt: Date.now(), isDeleted: false },
-      { title: 'Today Task', status: TaskStatus.PENDING, date: '2025-12-25', isPriority: false, createdAt: Date.now(), isDeleted: false }
+      { id: nanoid(), title: 'Yesterday Pending', status: TaskStatus.PENDING, date: '2025-12-24', isPriority: false, createdAt: Date.now(), isDeleted: false },
+      { id: nanoid(), title: 'Yesterday Completed', status: TaskStatus.COMPLETED, date: '2025-12-24', isPriority: false, createdAt: Date.now(), isDeleted: false },
+      { id: nanoid(), title: 'Today Task', status: TaskStatus.PENDING, date: '2025-12-25', isPriority: false, createdAt: Date.now(), isDeleted: false }
     ]);
 
     const tasks = await getTasks('2025-12-25', true);
@@ -73,20 +76,22 @@ describe('Todo Service DAO', () => {
       date: '2025-12-25',
       isPriority: false,
       createdAt: Date.now(),
-      projectId: 1,
-      bigGoalId: 2,
-      smallGoalId: 3
+      projectId: 'proj-1',
+      bigGoalId: 'bg-1',
+      smallGoalId: 'sg-1'
     });
 
     const task = await db.tasks.get(id);
-    expect(task?.projectId).toBe(1);
-    expect(task?.bigGoalId).toBe(2);
-    expect(task?.smallGoalId).toBe(3);
+    expect(task?.projectId).toBe('proj-1');
+    expect(task?.bigGoalId).toBe('bg-1');
+    expect(task?.smallGoalId).toBe('sg-1');
   });
 
   it('should trigger progress calculation on update and delete', async () => {
     // Add a project first to avoid errors if calculateProjectProgress fails
-    const projectId = await db.projects.add({ 
+    const projectId = 'proj-progress-test';
+    await db.projects.add({ 
+      id: projectId,
       name: 'P1', status: 'IN_PROGRESS', progress: 0, createdAt: Date.now(), isDeleted: false 
     } as any);
 

@@ -8,7 +8,7 @@ import { addTask, updateTask, deleteTask, getTasks } from '../services/todoServi
 import { db } from '../db';
 
 interface TodoModuleProps {
-  onNavigateToProject?: (projectId: number) => void;
+  onNavigateToProject?: (projectId: string) => void;
 }
 
 export const TodoModule: React.FC<TodoModuleProps> = ({ onNavigateToProject }) => {
@@ -30,9 +30,9 @@ export const TodoModule: React.FC<TodoModuleProps> = ({ onNavigateToProject }) =
         db.smallGoals.toArray()
       ]);
 
-      const pMap = projects.reduce((acc, p) => ({ ...acc, [p.id!]: p.name }), {} as Record<number, string>);
-      const bgMap = bigGoals.reduce((acc, bg) => ({ ...acc, [bg.id!]: bg.name }), {} as Record<number, string>);
-      const sgMap = smallGoals.reduce((acc, sg) => ({ ...acc, [sg.id!]: sg.name }), {} as Record<number, string>);
+      const pMap = projects.reduce((acc, p) => ({ ...acc, [p.id!]: p.name }), {} as Record<string, string>);
+      const bgMap = bigGoals.reduce((acc, bg) => ({ ...acc, [bg.id!]: bg.name }), {} as Record<string, string>);
+      const sgMap = smallGoals.reduce((acc, sg) => ({ ...acc, [sg.id!]: sg.name }), {} as Record<string, string>);
 
       return { pMap, bgMap, sgMap };
     },
@@ -92,11 +92,11 @@ export const TodoModule: React.FC<TodoModuleProps> = ({ onNavigateToProject }) =
     });
   };
 
-  const handleDeleteTask = async (id?: number) => {
+  const handleDeleteTask = async (id?: string) => {
     if (id) await deleteTask(id);
   };
 
-  const handleUpdateTaskTitle = async (id: number, newTitle: string) => {
+  const handleUpdateTaskTitle = async (id: string, newTitle: string) => {
     await updateTask(id, { title: newTitle });
   };
 

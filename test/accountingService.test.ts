@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { nanoid } from 'nanoid';
 import { db } from '../db';
 import { clearDatabase } from './db-test-utils';
 import { addLog, deleteLog, getLogs, updateLog } from '../services/accountingService';
@@ -25,7 +26,9 @@ describe('Accounting Service DAO', () => {
   it('should soft delete a log', async () => {
     // We need to implement addLog first or manually add to DB for this test
     // Assuming addLog will be implemented, or we can use db.logs.add directly to set up
-    const id = await db.logs.add({
+    const id = nanoid();
+    await db.logs.add({
+      id,
       type: LogType.TIME,
       name: 'To Delete',
       value: 10,
@@ -47,8 +50,8 @@ describe('Accounting Service DAO', () => {
 
   it('should not return deleted logs in getLogs', async () => {
     await db.logs.bulkAdd([
-        { type: LogType.TIME, name: 'Active', value: 10, date: '2025-12-25', createdAt: Date.now(), isDeleted: false },
-        { type: LogType.TIME, name: 'Deleted', value: 20, date: '2025-12-25', createdAt: Date.now(), isDeleted: true }
+        { id: nanoid(), type: LogType.TIME, name: 'Active', value: 10, date: '2025-12-25', createdAt: Date.now(), isDeleted: false },
+        { id: nanoid(), type: LogType.TIME, name: 'Deleted', value: 20, date: '2025-12-25', createdAt: Date.now(), isDeleted: true }
     ]);
 
     const logs = await getLogs('2025-12-25', LogType.TIME);

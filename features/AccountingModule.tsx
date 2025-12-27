@@ -17,7 +17,7 @@ export const AccountingModule: React.FC = () => {
   const [targetDate, setTargetDate] = useState(getTodayStr());
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const todayStr = getTodayStr();
@@ -88,13 +88,15 @@ export const AccountingModule: React.FC = () => {
   };
 
   const startEdit = (log: AccountLog) => {
-    setEditingId(log.id!);
-    setName(log.name);
-    setValue(log.value.toString());
+    if (log.id) {
+        setEditingId(log.id);
+        setName(log.name);
+        setValue(log.value.toString());
+    }
   };
   const cancelEdit = () => { setEditingId(null); setName(''); setValue(''); };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (confirm('确定要删除这条记录吗？')) {
       await deleteLog(id);
       if (editingId === id) cancelEdit();

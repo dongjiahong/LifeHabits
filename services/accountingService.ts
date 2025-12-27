@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid';
 import { db } from '../db';
 import { AccountLog, LogType } from '../types';
 
@@ -19,24 +20,27 @@ export function formatChartData(logs: AccountLog[] | undefined) {
 
 // DAO Methods
 
-export async function addLog(log: Omit<AccountLog, 'id'>): Promise<number> {
+export async function addLog(log: Omit<AccountLog, 'id'>): Promise<string> {
+    const id = nanoid();
     const newLog = {
         ...log,
+        id,
         createdAt: log.createdAt || Date.now(),
         updatedAt: Date.now(),
         isDeleted: false
     };
-    return await db.logs.add(newLog);
+    await db.logs.add(newLog);
+    return id;
 }
 
-export async function updateLog(id: number, updates: Partial<AccountLog>): Promise<void> {
+export async function updateLog(id: string, updates: Partial<AccountLog>): Promise<void> {
     await db.logs.update(id, {
         ...updates,
         updatedAt: Date.now()
     });
 }
 
-export async function deleteLog(id: number): Promise<void> {
+export async function deleteLog(id: string): Promise<void> {
     await db.logs.update(id, {
         isDeleted: true,
         updatedAt: Date.now()

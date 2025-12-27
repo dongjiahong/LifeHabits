@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid';
 import { db } from '../db';
 
 /**
@@ -17,6 +18,7 @@ export async function setupTestData() {
   
   // 添加默认设置
   await db.settings.add({
+    id: 'setting-1',
     aiProvider: 'gemini',
     geminiModel: 'gemini-3-flash-preview',
     openaiUrl: 'https://api.openai.com/v1',
@@ -26,6 +28,7 @@ export async function setupTestData() {
   // 添加默认模板
   await db.templates.bulkAdd([
     {
+      id: nanoid(),
       name: '每日四问 (经典)',
       questions: ['我今天做了什么？', '今天遇到了什么问题？', '我可以如何解决？', '今天的感悟和收获？'],
       isDefault: true

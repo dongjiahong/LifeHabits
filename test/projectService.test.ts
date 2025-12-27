@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { nanoid } from 'nanoid';
 import { db } from '../db';
 import { clearDatabase } from './db-test-utils';
 import { 
@@ -108,12 +109,14 @@ describe('Project Service', () => {
 
       // Add tasks to small goal
       await db.tasks.add({ 
+        id: nanoid(),
         title: 'T1', 
         status: TaskStatus.COMPLETED, 
         projectId, bigGoalId, smallGoalId, 
         date: '2025-12-26', isPriority: false, createdAt: Date.now() 
       });
       await db.tasks.add({ 
+        id: nanoid(),
         title: 'T2', 
         status: TaskStatus.PENDING, 
         projectId, bigGoalId, smallGoalId, 

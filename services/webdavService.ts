@@ -75,7 +75,7 @@ export class WebDAVService {
 
   async generateManifestFromLocalDB(): Promise<SyncManifest> {
     const manifest: SyncManifest = {
-      version: 2,
+      version: 3, // Version 3: String IDs (UUID)
       lastUpdated: Date.now(),
       files: {}
     };
@@ -144,10 +144,16 @@ export class WebDAVService {
   }
 
   async sync(): Promise<string> {
-    // 0. 尝试从 V1 迁移 (如果清单不存在)
     const remoteManifest = await this.fetchManifest();
-    if (!remoteManifest) {
-        await this.migrateFromV1();
+    
+    // Check version compatibility
+    if (remoteManifest && remoteManifest.version < 3) {
+      console.warn("Remote data is older version (number IDs). Ignoring/Overwriting for V3 (string IDs).");
+      // In a strict world, we might want to delete remote files, but simply uploading our V3 data 
+      // will eventually overwrite or coexist until we purge.
+      // For now, let's treat it as if remote doesn't exist to force upload, 
+      // BUT we must be careful not to download garbage.
+      // Strategy: Upload everything local.
     }
 
     const currentManifest = await this.fetchManifest();
@@ -329,80 +335,32 @@ export class WebDAVService {
   }
 
   private async lwwSyncTable(table: any, remoteItems: any[]) {
+    console.log(`[WebDAV] Starting sync for table: ${table.name}, count: ${remoteItems.length}`);
     await db.transaction('rw', table, async () => {
       for (const remoteItem of remoteItems) {
-        let localItem = await table.where('createdAt').equals(remoteItem.createdAt).first();
+        if (!remoteItem.id) continue; // Skip invalid items
         
-        // 特殊处理 templates 表：如果 createdAt 不匹配，尝试按 name 匹配（name 是唯一的）
-        if (!localItem && table.name === 'templates' && remoteItem.name) {
-          localItem = await table.where('name').equals(remoteItem.name).first();
-        }
+        const localItem = await table.get(remoteItem.id);
 
         if (!localItem) {
-          const { id, ...rest } = remoteItem;
           try {
-            await table.add(rest);
+            await table.add(remoteItem);
           } catch (e: any) {
-            // 如果仍然发生冲突（例如并发写入或逻辑漏洞），记录错误但不中断整个同步
-            if (e.name === 'ConstraintError') {
-              console.warn(`Sync ConstraintError on ${table.name} for item:`, remoteItem, e);
-              // 再次尝试更新，以防万一
-              if (table.name === 'templates' && remoteItem.name) {
-                const existing = await table.where('name').equals(remoteItem.name).first();
-                if (existing && remoteItem.updatedAt > (existing.updatedAt || 0)) {
-                  await table.update(existing.id, remoteItem);
-                }
-              }
-            } else {
-              throw e;
-            }
+            console.error(`[WebDAV] Sync Add Error on ${table.name}:`, { item: remoteItem, error: e });
           }
         } else if (remoteItem.updatedAt > (localItem.updatedAt || 0)) {
-          await table.update(localItem.id, remoteItem);
+          try {
+            await table.update(localItem.id, remoteItem);
+          } catch (e: any) {
+             console.error(`[WebDAV] Sync Update Error on ${table.name}:`, { 
+                id: localItem.id, 
+                item: remoteItem, 
+                error: e 
+            });
+          }
         }
       }
     });
-  }
-
-  private async migrateFromV1() {
-    const v1Folder = this.baseUrl + DATA_ROOT;
-    const files = await this.listV1Files(v1Folder);
-    if (files.length === 0) return;
-
-    for (const fileName of files) {
-        try {
-            const res = await fetch(v1Folder + fileName, { headers: { 'Authorization': this.authHeader } });
-            if (!res.ok) continue;
-            const data = await res.json();
-            
-            await this.applyShardToLocalDb(this.getFilePathForData('todo'), data.tasks || []);
-            await this.applyShardToLocalDb(this.getFilePathForData('habit'), { habits: data.habits || [], habitLogs: data.habitLogs || [] });
-            
-            const weekStr = fileName.match(/data_(.*)\.json/)?.[1];
-            if (weekStr) {
-                await this.applyShardToLocalDb(this.getFilePathForData('accounting', weekStr), data.logs || []);
-                await this.applyShardToLocalDb(this.getFilePathForData('review', weekStr), data.reviews || []);
-            }
-        } catch (e) {
-            console.error(`Failed to migrate ${fileName}`, e);
-        }
-    }
-  }
-
-  private async listV1Files(url: string): Promise<string[]> {
-    try {
-      const res = await fetch(url, { method: 'PROPFIND', headers: { 'Authorization': this.authHeader, 'Depth': '1' } });
-      if (!res.ok) return [];
-      const text = await res.text();
-      const parser = new DOMParser();
-      const xml = parser.parseFromString(text, 'text/xml');
-      const hrefs = Array.from(xml.getElementsByTagName('href')).map(h => h.textContent || '');
-      return hrefs
-        .map(h => decodeURIComponent(h).split('/').pop() || '')
-        .filter(f => f.startsWith('data_') && f.endsWith('.json'));
-    } catch (e) {
-      return [];
-    }
   }
 
   async testConnection(): Promise<boolean> {

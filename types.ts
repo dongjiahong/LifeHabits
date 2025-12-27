@@ -10,7 +10,7 @@ export enum ProjectStatus {
 }
 
 export interface Task {
-  id?: number;
+  id?: string;
   title: string;
   status: TaskStatus;
   date: string; // YYYY-MM-DD
@@ -19,13 +19,13 @@ export interface Task {
   updatedAt?: number;
   isDeleted?: boolean;
   // 项目关联
-  projectId?: number;
-  bigGoalId?: number;
-  smallGoalId?: number;
+  projectId?: string;
+  bigGoalId?: string;
+  smallGoalId?: string;
 }
 
 export interface Project {
-  id?: number;
+  id?: string;
   name: string;
   description?: string; // 支持 Markdown
   status: ProjectStatus;
@@ -38,8 +38,8 @@ export interface Project {
 }
 
 export interface BigGoal {
-  id?: number;
-  projectId: number;
+  id?: string;
+  projectId: string;
   name: string;
   description?: string;
   status: ProjectStatus;
@@ -53,9 +53,9 @@ export interface BigGoal {
 }
 
 export interface SmallGoal {
-  id?: number;
-  projectId: number;
-  bigGoalId: number;
+  id?: string;
+  projectId: string;
+  bigGoalId: string;
   name: string;
   description?: string;
   status: ProjectStatus;
@@ -74,7 +74,7 @@ export enum LogType {
 }
 
 export interface AccountLog {
-  id?: number;
+  id?: string;
   type: LogType;
   name: string; // 事项名称 或 消费原因
   value: number; // 分钟数 或 金额
@@ -85,7 +85,7 @@ export interface AccountLog {
 }
 
 export interface ReviewTemplate {
-  id?: number;
+  id?: string;
   name: string;
   questions: string[]; // 问题数组
   isDefault?: boolean;
@@ -95,9 +95,9 @@ export interface ReviewTemplate {
 }
 
 export interface Review {
-  id?: number;
+  id?: string;
   date: string;
-  templateId?: number; // 使用的模版ID
+  templateId?: string; // 使用的模版ID
   templateName: string; // 当时使用的模版名称（快照）
   answers: { question: string; answer: string }[]; // 问题和答案的键值对，替代原来的固定字段
   aiSummary?: string; // AI 生成的总结
@@ -115,7 +115,7 @@ export interface Review {
 }
 
 export interface AppSettings {
-  id?: number;
+  id?: string;
   aiProvider: 'gemini' | 'openai';
   
   // Gemini Config
@@ -135,7 +135,7 @@ export interface AppSettings {
 }
 
 export interface Habit {
-  id?: number;
+  id?: string;
   name: string;
   icon: string; // Emoji
   greenBeans: number; // 成功次数
@@ -147,8 +147,8 @@ export interface Habit {
 }
 
 export interface HabitLog {
-  id?: number;
-  habitId: number;
+  id?: string;
+  habitId: string;
   type: 'green' | 'red';
   date: string;
   createdAt: number;

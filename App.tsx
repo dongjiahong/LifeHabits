@@ -11,7 +11,7 @@ import { ToastProvider } from './components/Toast';
 
 const AppContent: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<TabView>('todo');
-  const [targetProjectId, setTargetProjectId] = useState<number | null>(null);
+  const [targetProjectId, setTargetProjectId] = useState<string | null>(null);
 
   const handleTabChange = (tab: TabView) => {
     setCurrentTab(tab);
@@ -20,7 +20,7 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleNavigateToProject = (projectId: number) => {
+  const handleNavigateToProject = (projectId: string) => {
     setTargetProjectId(projectId);
     setCurrentTab('projects');
   };

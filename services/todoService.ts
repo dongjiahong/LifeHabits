@@ -1,22 +1,25 @@
+import { nanoid } from 'nanoid';
 import { db } from '../db';
 import { Task, TaskStatus } from '../types';
 import { calculateProjectProgress } from './projectService';
 
-export async function addTask(task: Omit<Task, 'id'>): Promise<number> {
+export async function addTask(task: Omit<Task, 'id'>): Promise<string> {
+    const id = nanoid();
     const newTask = {
         ...task,
+        id,
         createdAt: task.createdAt || Date.now(),
         updatedAt: Date.now(),
         isDeleted: false
     };
-    const id = await db.tasks.add(newTask);
+    await db.tasks.add(newTask);
     if (task.projectId) {
         await calculateProjectProgress(task.projectId);
     }
     return id;
 }
 
-export async function updateTask(id: number, updates: Partial<Task>): Promise<void> {
+export async function updateTask(id: string, updates: Partial<Task>): Promise<void> {
     await db.tasks.update(id, {
         ...updates,
         updatedAt: Date.now()
@@ -27,7 +30,7 @@ export async function updateTask(id: number, updates: Partial<Task>): Promise<vo
     }
 }
 
-export async function deleteTask(id: number): Promise<void> {
+export async function deleteTask(id: string): Promise<void> {
     const task = await db.tasks.get(id);
     await db.tasks.update(id, {
         isDeleted: true,
