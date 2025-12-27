@@ -37,11 +37,27 @@ class LifeHabitsDatabase extends Dexie {
       smallGoals: 'id, projectId, bigGoalId, status, isMilestone, createdAt, updatedAt, isDeleted'
     });
 
+    // Version 12: Remove unique constraint on template name for better sync compatibility
+    (this as any).version(12).stores({
+      tasks: 'id, date, status, isPriority, projectId, bigGoalId, smallGoalId, createdAt, updatedAt, isDeleted',
+      logs: 'id, date, type, createdAt, updatedAt, isDeleted',
+      reviews: 'id, date, createdAt, updatedAt, isDeleted',
+      templates: 'id, name, createdAt, updatedAt, isDeleted', // 移除 &name 唯一约束
+      settings: 'id',
+      habits: 'id, isArchived, createdAt, updatedAt, isDeleted',
+      habitLogs: 'id, habitId, date, createdAt, updatedAt, isDeleted',
+      projects: 'id, status, createdAt, updatedAt, isDeleted',
+      bigGoals: 'id, projectId, status, createdAt, updatedAt, isDeleted',
+      smallGoals: 'id, projectId, bigGoalId, status, isMilestone, createdAt, updatedAt, isDeleted'
+    });
+
     (this as any).on('populate', () => {
       const baseTime = 1735171200000; // 2024-12-26 固定时间戳
+      // 使用固定 ID 确保不同设备初始化时生成相同的默认模板
+      // 这样同步时会被识别为同一条记录，LWW 正常工作
       this.templates.bulkAdd([
         {
-          id: nanoid(),
+          id: 'default-template-daily-four',
           name: '每日四问 (经典)',
           questions: ['我今天做了什么？', '今天遇到了什么问题？', '我可以如何解决？', '今天的感悟和收获？'],
           isDefault: true,
@@ -50,7 +66,7 @@ class LifeHabitsDatabase extends Dexie {
           isDeleted: false
         },
         {
-          id: nanoid(),
+          id: 'default-template-kpt',
           name: 'KPT 复盘法',
           questions: ['Keep (今天做得好继续保持的)', 'Problem (今天遇到的问题)', 'Try (明天准备尝试的改进)'],
           isDefault: false,
@@ -59,7 +75,7 @@ class LifeHabitsDatabase extends Dexie {
           isDeleted: false
         },
         {
-          id: nanoid(),
+          id: 'default-template-simple',
           name: '简单回顾',
           questions: ['今日成就', '今日遗憾', '一句话总结'],
           isDefault: false,
