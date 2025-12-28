@@ -126,10 +126,19 @@ export const HabitModule: React.FC = () => {
       {/* Create Modal */}
       <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="种下一个新习惯">
          <div className="space-y-4">
-            <div className="flex justify-center mb-4">
-              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-4xl border-2 border-dashed border-slate-200">
-                {newHabitIcon}
-              </div>
+            <div className="flex items-center gap-4 mb-2">
+               <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-3xl shadow-inner border border-indigo-100 shrink-0">
+                 {newHabitIcon}
+               </div>
+               <div className="flex-1">
+                 <Input 
+                    label="自定义图标 (Emoji)"
+                    placeholder="输入或选择图标" 
+                    value={newHabitIcon}
+                    onChange={e => setNewHabitIcon(e.target.value)}
+                    maxLength={2}
+                 />
+               </div>
             </div>
             
             <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
@@ -145,7 +154,8 @@ export const HabitModule: React.FC = () => {
             </div>
 
             <Input 
-               placeholder="习惯名称 (如: 早起喝水)" 
+               label="习惯名称"
+               placeholder="如: 早起喝水" 
                value={newHabitName}
                onChange={e => setNewHabitName(e.target.value)}
             />
@@ -162,6 +172,12 @@ const HabitDetail: React.FC<{ id: string; onBack: () => void }> = ({ id, onBack 
   const logs = useLiveQuery(() => getHabitLogs(id), [id]);
   const { showToast } = useToast();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const todayStr = getTodayStr();
+  const todayCount = useMemo(() => {
+    if (!logs) return 0;
+    return logs.filter(l => l.date === todayStr && l.type === 'green').length;
+  }, [logs, todayStr]);
 
   const updateBeans = async (type: 'green' | 'red') => {
     if (!habit) return;
@@ -332,14 +348,19 @@ const HabitDetail: React.FC<{ id: string; onBack: () => void }> = ({ id, onBack 
 
        {/* Controls */}
        <div className="mb-2 space-y-4 z-20">
-          <div className="flex justify-center items-center gap-8 bg-white/40 backdrop-blur rounded-2xl py-3 mx-4 border border-white/40 shadow-sm">
+          <div className="flex justify-center items-center gap-6 bg-white/40 backdrop-blur rounded-2xl py-3 mx-4 border border-white/40 shadow-sm">
              <div className="text-center">
-                <div className="text-2xl font-bold text-emerald-500/80">{habit.greenBeans}</div>
+                <div className="text-xl font-bold text-emerald-600/80">{todayCount}</div>
+                <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">今日</div>
+             </div>
+             <div className="h-6 w-[1px] bg-slate-300/50"></div>
+             <div className="text-center">
+                <div className="text-xl font-bold text-emerald-500/80">{habit.greenBeans}</div>
                 <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">坚持</div>
              </div>
-             <div className="h-8 w-[1px] bg-slate-300/50"></div>
+             <div className="h-6 w-[1px] bg-slate-300/50"></div>
              <div className="text-center">
-                <div className="text-2xl font-bold text-rose-400/80">{habit.redBeans}</div>
+                <div className="text-xl font-bold text-rose-400/80">{habit.redBeans}</div>
                 <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">放弃</div>
              </div>
           </div>
