@@ -271,7 +271,7 @@ export const TaskItem: React.FC<{
           {isEditing ? (
             <input
               autoFocus
-              className="flex-1 text-sm font-medium bg-indigo-50 border-none outline-none focus:ring-0 p-0 text-slate-800"
+              className="flex-1 text-sm font-medium bg-white border border-indigo-200 rounded-md shadow-sm outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 px-3 py-1.5 text-slate-800 transition-all placeholder:text-slate-300"
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               onBlur={handleBlur}
