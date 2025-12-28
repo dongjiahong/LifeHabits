@@ -222,7 +222,7 @@ export const TodoModule: React.FC<TodoModuleProps> = ({ onNavigateToProject }) =
 };
 
 // 单个任务组件
-const TaskItem: React.FC<{ 
+export const TaskItem: React.FC<{ 
   task: Task; 
   onToggleStatus: () => void;
   onTogglePriority: () => void;
@@ -235,6 +235,7 @@ const TaskItem: React.FC<{
 }> = ({ task, onToggleStatus, onTogglePriority, onDelete, onUpdateTitle, isPriorityList, showDate, contextLabel, onContextClick }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(task.title);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleBlur = () => {
     setIsEditing(false);
@@ -278,8 +279,9 @@ const TaskItem: React.FC<{
             />
           ) : (
             <span 
+              onClick={() => setIsExpanded(!isExpanded)}
               onDoubleClick={() => setIsEditing(true)}
-              className={`flex-1 text-sm font-medium transition-all cursor-text truncate ${task.status === TaskStatus.COMPLETED ? 'text-slate-400 line-through' : 'text-slate-800'}`}
+              className={`flex-1 text-sm font-medium transition-all cursor-pointer ${isExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'} ${task.status === TaskStatus.COMPLETED ? 'text-slate-400 line-through' : 'text-slate-800'}`}
             >
               {task.title}
             </span>

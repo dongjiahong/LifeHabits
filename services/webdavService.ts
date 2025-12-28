@@ -7,7 +7,7 @@ import {
   Habit,
   HabitLog,
 } from "../types";
-import { getWeekStr } from "../utils";
+import { getWeekStr, runWithConcurrency } from "../utils";
 
 export interface SyncManifest {
   version: number;
@@ -214,7 +214,7 @@ export class WebDAVService {
     let uploadCount = 0;
     let skipCount = 0;
 
-    for (const path of allPaths) {
+    const tasks = allPaths.map(path => async () => {
       const localFileInfo = localManifest.files[path];
       const remoteFileInfo = remoteManifest?.files[path];
       const lastSyncFileInfo = lastSyncManifest?.files[path];
@@ -228,22 +228,43 @@ export class WebDAVService {
       // 判断是否需要上传：本地比上次同步时新
       const needUpload = localUpdatedAt > lastSyncUpdatedAt;
 
-      if (needDownload && remoteFileInfo) {
-        // 远程有更新，先下载合并
-        console.log(`[Sync] 下载远程更新: ${path}`);
-        await this.downloadAndApply(path);
-        downloadCount++;
-      }
+      let result = { downloaded: false, uploaded: false, skipped: false };
 
-      if (needUpload || needDownload) {
-        // 本地有更新或刚下载合并了远程数据，需要上传
-        console.log(`[Sync] 上传本地数据: ${path}`);
-        await this.uploadShard(path);
-        uploadCount++;
-      } else if (!needDownload && !needUpload) {
-        console.log(`[Sync] 跳过无变化: ${path}`);
-        skipCount++;
+      try {
+        if (needDownload && remoteFileInfo) {
+          // 远程有更新，先下载合并
+          console.log(`[Sync] 下载远程更新: ${path}`);
+          await this.downloadAndApply(path);
+          result.downloaded = true;
+        }
+
+        if (needUpload || needDownload) {
+          // 本地有更新或刚下载合并了远程数据，需要上传
+          console.log(`[Sync] 上传本地数据: ${path}`);
+          await this.uploadShard(path);
+          result.uploaded = true;
+        } else if (!needDownload && !needUpload) {
+          console.log(`[Sync] 跳过无变化: ${path}`);
+          result.skipped = true;
+        }
+      } catch (e) {
+        console.error(`[Sync] Error syncing path: ${path}`, e);
+        throw e;
       }
+      return result;
+    });
+
+    // Limit concurrency to 3
+    const results = await runWithConcurrency(tasks, 3);
+
+    for (const res of results) {
+       if (res.status === 'fulfilled') {
+          if (res.value.downloaded) downloadCount++;
+          if (res.value.uploaded) uploadCount++;
+          if (res.value.skipped) skipCount++;
+       } else {
+          console.error(`[Sync] Failed task:`, res.reason);
+       }
     }
 
     // 重新生成 manifest 并更新

@@ -34,3 +34,32 @@ export const getWeekStr = (dateStr: string): string => {
   const weekNo = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   return `${date.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
 };
+
+export async function runWithConcurrency<T>(
+  tasks: (() => Promise<T>)[],
+  concurrency: number
+): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = new Array(tasks.length);
+  let index = 0;
+
+  async function worker() {
+    while (index < tasks.length) {
+      const i = index++;
+      try {
+        const value = await tasks[i]();
+        results[i] = { status: 'fulfilled', value };
+      } catch (reason) {
+        results[i] = { status: 'rejected', reason };
+      }
+    }
+  }
+
+  const workers = [];
+  for (let i = 0; i < Math.min(concurrency, tasks.length); i++) {
+    workers.push(worker());
+  }
+
+  await Promise.all(workers);
+  return results;
+}
+

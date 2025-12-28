@@ -10,7 +10,7 @@
 
 ## Data & Storage
 - **Database**: Dexie.js (A wrapper for IndexedDB, providing a robust local-first storage solution)
-- **Sync Protocol**: WebDAV. Based on a "Central Manifest" architecture with incremental sharding (Module-based and Weekly-based). Implements soft delete and Last-Write-Wins conflict resolution.
+- **Sync Protocol**: WebDAV. Based on a "Central Manifest" architecture with incremental sharding (Module-based and Weekly-based). Implements multi-module concurrency, soft delete, and Last-Write-Wins conflict resolution.
 
 ## Intelligence
 - **AI Engine**: Google Gemini API (Using `@google/genai` SDK)

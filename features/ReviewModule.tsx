@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { getTodayStr } from '../utils';
@@ -27,6 +27,7 @@ export const ReviewModule: React.FC = () => {
   const [instantSummary, setInstantSummary] = useState<string | null>(null);
   
   const { showToast, hideToast } = useToast();
+  const skipNextSync = useRef(false);
 
   const templates = useLiveQuery(() => getTemplates());
   const todayReview = useLiveQuery(
@@ -36,6 +37,10 @@ export const ReviewModule: React.FC = () => {
 
   useEffect(() => {
     if (todayReview) {
+      if (skipNextSync.current) {
+        skipNextSync.current = false;
+        return;
+      }
       if (todayReview.answers) {
          const ansMap: Record<string, string> = {};
          todayReview.answers.forEach(a => ansMap[a.question] = a.answer);
@@ -149,6 +154,12 @@ export const ReviewModule: React.FC = () => {
         await updateReview(todayReview.id, data);
       } else {
         await addReview(data);
+      }
+      
+      // AI 成功生成并保存后，清空输入框
+      if (summary) {
+        skipNextSync.current = true;
+        setAnswers({});
       }
     } catch (e) {
       showToast('数据库保存失败', 'error');
