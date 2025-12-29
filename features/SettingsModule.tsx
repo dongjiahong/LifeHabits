@@ -3,9 +3,10 @@ import { nanoid } from 'nanoid';
 import { db } from '../db';
 import { AppSettings } from '../types';
 import { Button, Input, Select } from '../components/UIComponents';
-import { Save, AlertCircle, Cloud, RefreshCw, Loader2, Bot, ArrowLeftRight, Trash2 } from 'lucide-react';
+import { Save, AlertCircle, Cloud, RefreshCw, Loader2, Bot, ArrowLeftRight, Trash2, Zap } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { WebDAVService } from '../services/webdavService';
+import { AutoSyncService } from '../services/autoSyncService';
 import { purgeDeletedData } from '../db';
 
 export const SettingsModule: React.FC = () => {
@@ -17,7 +18,8 @@ export const SettingsModule: React.FC = () => {
     openaiKey: '',
     webdavUrl: '',
     webdavUsername: '',
-    webdavPassword: ''
+    webdavPassword: '',
+    autoSyncEnabled: false
   });
   const [isSyncing, setIsSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState<'ai' | 'sync'>('ai');
@@ -39,6 +41,14 @@ export const SettingsModule: React.FC = () => {
       } else {
         await db.settings.add({ ...config, id: nanoid() });
       }
+      
+      // 根据自动同步设置启停服务
+      if (config.autoSyncEnabled && config.webdavUrl) {
+        await AutoSyncService.start(config.autoSyncDebounceMs);
+      } else {
+        AutoSyncService.stop();
+      }
+      
       showToast('设置已保存', 'success');
     } catch (e) {
       showToast('保存失败', 'error');
@@ -259,6 +269,33 @@ export const SettingsModule: React.FC = () => {
                 <p className="text-[10px] text-slate-400 text-center leading-tight">
                   支持坚果云、Nextcloud 等标准 WebDAV 服务。数据将按模块和时间分片存储。
                 </p>
+
+                {/* 自动同步开关 */}
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <Zap size={14} className="text-amber-500" />
+                    <div>
+                      <span className="text-xs font-medium text-slate-700">自动同步</span>
+                      <p className="text-[10px] text-slate-400">数据变更后自动同步</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={config.autoSyncEnabled}
+                    disabled={!config.webdavUrl}
+                    onClick={() => setConfig({ ...config, autoSyncEnabled: !config.autoSyncEnabled })}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      config.autoSyncEnabled ? 'bg-indigo-600' : 'bg-slate-200'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        config.autoSyncEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             </div>
 

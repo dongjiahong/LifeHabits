@@ -132,6 +132,11 @@ export interface AppSettings {
   webdavUsername?: string;
   webdavPassword?: string;
   lastSyncTime?: number;
+  
+  // 自动同步配置
+  autoSyncEnabled?: boolean;  // 是否启用自动同步
+  autoSyncDebounceMs?: number; // 数据变更后的防抖延迟（毫秒），默认 3000
+  
   // 上次成功同步后的 manifest 快照，用于增量同步
   lastSyncManifest?: {
     version: number;
