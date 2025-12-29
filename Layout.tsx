@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TabView } from './types';
 import { CheckSquare, PieChart, BookOpen, Settings, RefreshCw, Loader2, Sprout, Briefcase } from 'lucide-react';
 import { useToast } from './components/Toast';
 import { db } from './db';
 import { WebDAVService } from './services/webdavService';
-import { initAutoSync } from './services/autoSyncService';
+import { initAutoSync, AutoSyncService } from './services/autoSyncService';
 
 // App Logo Component
 const AppLogo = () => (
@@ -26,11 +26,28 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => {
   const { showToast } = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
+  const wasAutoSyncing = useRef(false);
 
-  // 初始化自动同步服务
+  // 初始化自动同步服务并监听状态变化
   useEffect(() => {
+    // 设置同步状态回调
+    AutoSyncService.setOnSyncStatusChange((syncing) => {
+      setIsSyncing(syncing);
+      
+      // 自动同步完成时显示通知
+      if (wasAutoSyncing.current && !syncing) {
+        showToast('自动同步完成', 'success');
+      }
+      wasAutoSyncing.current = syncing;
+    });
+    
+    // 初始化服务
     initAutoSync();
-  }, []);
+    
+    return () => {
+      AutoSyncService.setOnSyncStatusChange(null);
+    };
+  }, [showToast]);
 
   const handleQuickSync = async () => {
     if (isSyncing) return;
