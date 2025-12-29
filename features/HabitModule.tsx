@@ -172,6 +172,8 @@ const HabitDetail: React.FC<{ id: string; onBack: () => void }> = ({ id, onBack 
   const logs = useLiveQuery(() => getHabitLogs(id), [id]);
   const { showToast } = useToast();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showIconModal, setShowIconModal] = useState(false);
+  const [editingIcon, setEditingIcon] = useState('');
 
   const todayStr = getTodayStr();
   const todayCount = useMemo(() => {
@@ -211,6 +213,23 @@ const HabitDetail: React.FC<{ id: string; onBack: () => void }> = ({ id, onBack 
      } catch (e) {
        showToast('删除失败', 'error');
      }
+  };
+
+  const openIconEditor = () => {
+    if (habit) {
+      setEditingIcon(habit.icon);
+      setShowIconModal(true);
+    }
+  };
+
+  const saveIcon = async () => {
+    if (!editingIcon.trim()) {
+      showToast('请选择一个图标', 'error');
+      return;
+    }
+    await updateHabit(id, { icon: editingIcon });
+    setShowIconModal(false);
+    showToast('图标已更新', 'success');
   };
 
   // 生成豆子列表 (优先使用 Logs 以保证时间顺序，没有 Logs 则使用 Counts 降级处理)
@@ -264,7 +283,17 @@ const HabitDetail: React.FC<{ id: string; onBack: () => void }> = ({ id, onBack 
           </button>
           <div className="flex flex-col items-center">
              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-               {habit.icon} {habit.name}
+               <button 
+                 onClick={openIconEditor}
+                 className="relative group hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                 title="点击修改图标"
+               >
+                 {habit.icon}
+                 <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                   <span className="text-white text-[8px]">✏️</span>
+                 </span>
+               </button>
+               {habit.name}
              </h2>
              {habit.isArchived && <span className="text-[10px] bg-amber-200 text-amber-800 px-2 rounded-full">🏆 已养成</span>}
           </div>
@@ -396,6 +425,40 @@ const HabitDetail: React.FC<{ id: string; onBack: () => void }> = ({ id, onBack 
                <Button variant="secondary" onClick={() => setShowDeleteModal(false)} className="flex-1">留下它</Button>
                <Button variant="danger" onClick={confirmDelete} className="flex-1">移除</Button>
             </div>
+         </div>
+       </Modal>
+
+       {/* Edit Icon Modal */}
+       <Modal isOpen={showIconModal} onClose={() => setShowIconModal(false)} title="修改图标">
+         <div className="space-y-4">
+            <div className="flex items-center gap-4 mb-2">
+               <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-3xl shadow-inner border border-indigo-100 shrink-0">
+                 {editingIcon}
+               </div>
+               <div className="flex-1">
+                 <Input 
+                    label="自定义图标 (Emoji)"
+                    placeholder="输入或选择图标" 
+                    value={editingIcon}
+                    onChange={e => setEditingIcon(e.target.value)}
+                    maxLength={2}
+                 />
+               </div>
+            </div>
+            
+            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+               {EMOJI_PRESETS.map(e => (
+                 <button 
+                   key={e} 
+                   onClick={() => setEditingIcon(e)}
+                   className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-colors ${editingIcon === e ? 'bg-indigo-100 border border-indigo-200' : 'bg-slate-50 hover:bg-slate-100'}`}
+                 >
+                   {e}
+                 </button>
+               ))}
+            </div>
+
+            <Button className="w-full mt-4" onClick={saveIcon}>保存</Button>
          </div>
        </Modal>
     </div>
