@@ -146,7 +146,7 @@ export const TodoModule: React.FC<TodoModuleProps> = ({ onNavigateToProject }) =
           placeholder={activeTab === 'today' ? "新增什么任务？" : "规划明天..."}
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
+          onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && handleAddTask()}
           className="w-full h-14 pl-5 pr-14 rounded-2xl bg-white shadow-lg shadow-indigo-100 border-none outline-none text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-200 transition-all"
         />
         <button 
