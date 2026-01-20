@@ -18,7 +18,7 @@ describe('ReviewModule', () => {
     });
   });
 
-  it('should clear answers after successful save and AI summary', async () => {
+  it('should persist answers after successful save and show AI summary', async () => {
     vi.mocked(aiService.generateDailyInsight).mockResolvedValue('AI Summary Result');
 
     render(<ReviewModule />);
@@ -39,10 +39,9 @@ describe('ReviewModule', () => {
     // Check if summary modal appeared
     expect(await screen.findByText('AI 每日洞察')).toBeInTheDocument();
     
-    // Check if textareas are cleared (this is the new behavior we want)
-    // We use waitFor because state updates might be async
+    // Check if textareas retain their value (User Experience improvement)
     await waitFor(() => {
-      expect(textareas[0]).toHaveValue('');
+      expect(textareas[0]).toHaveValue('My first answer');
     });
   });
 

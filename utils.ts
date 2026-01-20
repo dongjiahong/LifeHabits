@@ -1,4 +1,3 @@
-
 export const getTodayStr = (): string => {
   const date = new Date();
   const offset = date.getTimezoneOffset();
@@ -14,16 +13,34 @@ export const getTomorrowStr = (): string => {
   return localDate.toISOString().split('T')[0];
 };
 
-export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(amount);
+export const formatCurrency = (amount: number, locale: string = 'zh-CN', currency: string = 'CNY'): string => {
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(amount);
+  } catch (e) {
+    // Fallback if Intl fails
+    return `¥${amount.toFixed(2)}`;
+  }
 };
 
 export const formatDuration = (minutes: number): string => {
+  if (minutes < 0) return '0分钟';
   if (minutes < 60) return `${minutes}分钟`;
+  
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
+  
+  // Use a simpler, clearer format
   return mins > 0 ? `${hours}小时 ${mins}分钟` : `${hours}小时`;
 };
+
+export const formatDate = (dateStr: string, options?: Intl.DateTimeFormatOptions): string => {
+  try {
+    const date = new Date(dateStr);
+    return new Intl.DateTimeFormat('zh-CN', options || { dateStyle: 'medium' }).format(date);
+  } catch (e) {
+    return dateStr;
+  }
+}
 
 // 获取日期的 ISO 周数 (格式: 2024-W01)
 export const getWeekStr = (dateStr: string): string => {
@@ -62,4 +79,3 @@ export async function runWithConcurrency<T>(
   await Promise.all(workers);
   return results;
 }
-

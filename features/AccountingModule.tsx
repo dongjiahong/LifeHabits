@@ -9,7 +9,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useToast } from '../components/Toast';
 import { getWebDAVService } from '../services/webdavService';
 
-const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+// Updated Palette: Indigo, Emerald, Amber, Rose, Violet
+const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6'];
 
 export const AccountingModule: React.FC = () => {
   // Hardcoded to TIME, removed state for switching
@@ -110,8 +111,8 @@ export const AccountingModule: React.FC = () => {
   return (
     <div className="space-y-3 pt-1 animate-fade-in">
       {/* 0. 日期切换器 */}
-      <div className="flex items-center justify-between bg-white/50 backdrop-blur rounded-xl px-2 py-1.5 border border-white/60 shadow-sm mx-auto max-w-[280px]">
-        <button onClick={() => changeDate(-1)} className="p-1 text-slate-400 hover:text-indigo-600 transition-colors">
+      <div className="flex items-center justify-between glass-panel px-2 py-1.5 mx-auto max-w-[280px] rounded-xl">
+        <button onClick={() => changeDate(-1)} className="p-1 text-slate-400 hover:text-indigo-600 transition-colors rounded-full hover:bg-slate-100">
           <ChevronLeft size={18} />
         </button>
         <div className="flex items-center gap-2">
@@ -120,33 +121,33 @@ export const AccountingModule: React.FC = () => {
             {targetDate === todayStr ? '今天' : targetDate}
           </span>
           {targetDate !== todayStr && (
-            <button onClick={() => setTargetDate(todayStr)} className="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-1.5 py-0.5 rounded-md">回今天</button>
+            <button onClick={() => setTargetDate(todayStr)} className="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-1.5 py-0.5 rounded-md hover:bg-indigo-100 transition-colors">回今天</button>
           )}
         </div>
-        <button onClick={() => changeDate(1)} className="p-1 text-slate-400 hover:text-indigo-600 transition-colors">
+        <button onClick={() => changeDate(1)} className="p-1 text-slate-400 hover:text-indigo-600 transition-colors rounded-full hover:bg-slate-100">
           <ChevronRight size={18} />
         </button>
       </div>
 
       {/* 1. 统计卡片 - 仅保留时间 */}
       <div className="grid grid-cols-2 gap-3 max-w-[280px] mx-auto">
-        <div className="bg-white/70 backdrop-blur rounded-xl p-3 border border-white/60 flex flex-col items-center justify-center shadow-sm">
+        <div className="glass-panel p-3 flex flex-col items-center justify-center rounded-xl">
            <span className="text-slate-500 text-[10px] mb-0.5">{targetDate === todayStr ? '今日' : '当日'}投入</span>
            <span className="text-lg font-bold text-indigo-600">
              {formatDuration(totalValue)}
            </span>
         </div>
-        <div className="bg-white/70 backdrop-blur rounded-xl p-3 border border-white/60 flex flex-col items-center justify-center shadow-sm">
+        <div className="glass-panel p-3 flex flex-col items-center justify-center rounded-xl">
            <span className="text-slate-500 text-[10px] mb-0.5">记录事项</span>
            <span className="text-lg font-bold text-slate-800">{logs?.length || 0}</span>
         </div>
       </div>
 
       {/* 2. 录入表单 */}
-      <div className="bg-white/80 backdrop-blur rounded-xl p-3 border border-white/60 shadow-sm">
+      <div className="glass-panel p-3 rounded-xl">
         <div className="flex items-center justify-between mb-2">
            <h3 className="text-xs font-bold text-slate-700">{editingId ? "修改记录" : "时间去哪了？"}</h3>
-           {editingId && <button onClick={cancelEdit} className="text-xs text-slate-400"><X size={14}/></button>}
+           {editingId && <button onClick={cancelEdit} className="text-xs text-slate-400 hover:text-slate-600"><X size={14}/></button>}
         </div>
         
         <div className="space-y-2">
@@ -178,7 +179,7 @@ export const AccountingModule: React.FC = () => {
 
       {/* 3. 图表与列表 */}
       {logs && logs.length > 0 && (
-        <div className="bg-white/80 backdrop-blur rounded-xl p-3 border border-white/60 shadow-sm flex flex-col">
+        <div className="glass-panel p-3 flex flex-col rounded-xl">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs font-bold text-slate-700">时间分布</h3>
           </div>

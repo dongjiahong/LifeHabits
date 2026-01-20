@@ -18,6 +18,20 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              'vendor': ['react', 'react-dom'],
+              'charts': ['recharts'],
+              'markdown': ['react-markdown'],
+              'icons': ['lucide-react'],
+              'db': ['dexie', 'dexie-react-hooks'],
+            }
+          }
+        },
+        chunkSizeWarningLimit: 1000,
       }
     };
 });

@@ -147,7 +147,7 @@ export const TodoModule: React.FC<TodoModuleProps> = ({ onNavigateToProject }) =
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && handleAddTask()}
-          className="w-full h-14 pl-5 pr-14 rounded-2xl bg-white shadow-lg shadow-indigo-100 border-none outline-none text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-200 transition-all"
+          className="w-full h-14 pl-5 pr-14 rounded-2xl glass-panel border-none outline-none text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-200 transition-all"
         />
         <button 
           onClick={handleAddTask} 
@@ -256,7 +256,7 @@ export const TaskItem: React.FC<{
   };
 
   return (
-    <div className={`group flex items-center p-3.5 bg-white rounded-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] ${task.status === TaskStatus.COMPLETED ? 'opacity-60 bg-slate-50' : 'shadow-sm shadow-indigo-100 hover:shadow-md hover:bg-white'}`}>
+    <div className={`group flex items-center p-3.5 bg-white rounded-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] ${task.status === TaskStatus.COMPLETED ? 'opacity-60 bg-slate-50' : 'shadow-sm hover:shadow-md hover:bg-white'}`}>
       {/* 勾选框 */}
       <button
         onClick={onToggleStatus}
@@ -278,13 +278,13 @@ export const TaskItem: React.FC<{
               onKeyDown={handleKeyDown}
             />
           ) : (
-            <span 
+            <button
               onClick={() => setIsExpanded(!isExpanded)}
               onDoubleClick={() => setIsEditing(true)}
-              className={`flex-1 text-sm font-medium transition-all cursor-pointer ${isExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'} ${task.status === TaskStatus.COMPLETED ? 'text-slate-400 line-through' : 'text-slate-800'}`}
+              className={`flex-1 text-left text-sm font-medium transition-all cursor-pointer bg-transparent border-none p-0 ${isExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'} ${task.status === TaskStatus.COMPLETED ? 'text-slate-400 line-through' : 'text-slate-800'}`}
             >
               {task.title}
-            </span>
+            </button>
           )}
           {showDate && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-normal whitespace-nowrap">

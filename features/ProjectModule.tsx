@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Briefcase, Trash2 } from 'lucide-react';
+import { Plus, Search, Briefcase, Trash2, AlertTriangle } from 'lucide-react';
 import { db } from '../db';
 import { Project, ProjectStatus } from '../types';
 import { getProjects, addProject, updateProject, deleteProject } from '../services/projectService';
@@ -17,6 +17,7 @@ export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { showToast } = useToast();
@@ -62,8 +63,12 @@ export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }
   });
 
   const loadProjects = async () => {
-    const data = await getProjects();
-    setProjects(data.sort((a, b) => b.createdAt - a.createdAt));
+    try {
+      const data = await getProjects();
+      setProjects(data.sort((a, b) => b.createdAt - a.createdAt));
+    } catch (e) {
+      showToast('加载项目失败', 'error');
+    }
   };
 
   useEffect(() => {
@@ -110,21 +115,27 @@ export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }
       setIsModalOpen(false);
       loadProjects();
     } catch (err) {
-      showToast('操作失败', 'error');
+      console.error(err);
+      showToast('保存项目失败', 'error');
     }
   };
 
-  const handleDeleteProject = async () => {
+  const confirmDeleteProject = () => {
+    setIsDeleteModalOpen(true);
+  };
+
+  const executeDeleteProject = async () => {
     if (!editingProject || !editingProject.id) return;
-    if (confirm('确定要删除这个项目及其所有目标和任务吗？此操作不可恢复。')) {
-      try {
-        await deleteProject(editingProject.id);
-        showToast('项目已删除', 'success');
-        setIsModalOpen(false);
-        loadProjects();
-      } catch (err) {
-        showToast('删除失败', 'error');
-      }
+    
+    try {
+      await deleteProject(editingProject.id);
+      showToast('项目已删除', 'success');
+      setIsDeleteModalOpen(false);
+      setIsModalOpen(false);
+      loadProjects();
+    } catch (err) {
+      console.error(err);
+      showToast('删除项目失败', 'error');
     }
   };
 
@@ -149,7 +160,7 @@ export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }
       {/* Header */}
       <div className="flex justify-between items-center px-1">
         <h2 className="text-2xl font-black text-slate-800 tracking-tight">我的项目</h2>
-        <Button onClick={() => handleOpenModal()} size="sm" className="rounded-full px-4 shadow-md shadow-indigo-100">
+        <Button onClick={() => handleOpenModal()} size="sm" className="rounded-full px-4 shadow-md shadow-indigo-100" aria-label="新建项目">
           <Plus size={18} className="mr-1" /> 新建项目
         </Button>
       </div>
@@ -163,6 +174,7 @@ export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-white border border-slate-100 rounded-2xl py-3.5 pl-11 pr-4 text-sm text-slate-800 shadow-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
+          aria-label="搜索项目"
         />
       </div>
 
@@ -201,6 +213,7 @@ export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
             required
+            maxLength={50}
           />
           <Textarea 
             label="项目描述 (支持 Markdown)" 
@@ -208,6 +221,7 @@ export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }
             rows={4}
             value={formData.description}
             onChange={(e) => setFormData({...formData, description: e.target.value})}
+            maxLength={500}
           />
           <div className="grid grid-cols-2 gap-4">
             <Select 
@@ -238,13 +252,31 @@ export const ProjectModule: React.FC<ProjectModuleProps> = ({ initialProjectId }
                 type="button" 
                 variant="danger" 
                 className="w-full bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100"
-                onClick={handleDeleteProject}
+                onClick={confirmDeleteProject}
               >
                 <Trash2 size={16} className="mr-2" /> 删除项目
               </Button>
             )}
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal 
+        isOpen={isDeleteModalOpen} 
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="确认删除项目"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 text-amber-600 bg-amber-50 p-3 rounded-xl border border-amber-100">
+            <AlertTriangle size={24} className="shrink-0" />
+            <p className="text-sm">此操作将永久删除该项目及其包含的所有目标和任务，且无法恢复。</p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)} className="flex-1">取消</Button>
+            <Button variant="danger" onClick={executeDeleteProject} className="flex-1">确认删除</Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

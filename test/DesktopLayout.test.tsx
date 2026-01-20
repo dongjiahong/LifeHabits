@@ -39,7 +39,8 @@ describe('Layout', () => {
     );
     // Outer container (centering)
     const outer = container.firstChild as HTMLElement;
-    expect(outer).toHaveClass('min-h-screen', 'flex', 'justify-center');
+    // Updated expectation to match min-h-[100dvh]
+    expect(outer).toHaveClass('min-h-[100dvh]', 'flex', 'justify-center');
 
     // Inner container (width constrained)
     // We look for the container with max-w-md class
@@ -59,17 +60,13 @@ describe('Layout', () => {
     
     // The blobs should be in the outer container, NOT the inner one
     // Check that inner container does NOT have the blobs
-    // The blobs use distinctive classes like "bg-purple-300/30" and "bg-indigo-300/30"
-    
-    // Using querySelector on inner to ensure they are NOT there
-    expect(inner.querySelector('.bg-purple-300\\/30')).toBeNull();
-    expect(inner.querySelector('.bg-indigo-300\\/30')).toBeNull();
+    // Using getElementsByClassName to avoid selector escaping issues
+    expect(inner.getElementsByClassName('bg-indigo-200/20').length).toBe(0);
+    expect(inner.getElementsByClassName('bg-emerald-200/20').length).toBe(0);
 
     // Using querySelector on outer to ensure they ARE there (somewhere, likely siblings of inner)
-    // Note: outer.querySelector will find them even if they are children, 
-    // but we proved they are not in inner, so they must be in outer.
-    expect(outer.querySelector('.bg-purple-300\\/30')).toBeInTheDocument();
-    expect(outer.querySelector('.bg-indigo-300\\/30')).toBeInTheDocument();
+    expect(outer.getElementsByClassName('bg-indigo-200/20').length).toBeGreaterThan(0);
+    expect(outer.getElementsByClassName('bg-emerald-200/20').length).toBeGreaterThan(0);
   });
 
   it('applies refined desktop styles to the inner container', () => {

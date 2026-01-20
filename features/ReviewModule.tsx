@@ -186,6 +186,7 @@ export const ReviewModule: React.FC = () => {
              onClick={() => setView('create-template')}
              className="p-2 bg-white/60 backdrop-blur-md text-slate-600 rounded-xl border border-white/60 shadow-sm hover:text-indigo-600 transition-all hover:bg-white"
              title="新建模版"
+             aria-label="新建模版"
            >
              <Plus size={18} />
            </button>
@@ -193,6 +194,7 @@ export const ReviewModule: React.FC = () => {
              onClick={() => setView('history')}
              className="p-2 bg-white/60 backdrop-blur-md text-slate-600 rounded-xl border border-white/60 shadow-sm hover:text-indigo-600 transition-all hover:bg-white"
              title="历史记录"
+             aria-label="历史记录"
            >
              <History size={18} />
            </button>
@@ -236,6 +238,7 @@ export const ReviewModule: React.FC = () => {
                 rows={3}
                 value={answers[q] || ''}
                 onChange={(e) => setAnswers({...answers, [q]: e.target.value})}
+                maxLength={2000}
                 className="bg-transparent border-none focus:ring-0 p-0 text-slate-700 placeholder:text-slate-400"
               />
             </div>
@@ -332,12 +335,12 @@ const CreateTemplateView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </div>
 
       <div className="bg-white/80 backdrop-blur rounded-2xl shadow-sm border border-white/60 p-5 space-y-4">
-        <Input label="模版名称" placeholder="例如：每周五总结" value={name} onChange={e => setName(e.target.value)} />
+        <Input label="模版名称" placeholder="例如：每周五总结" value={name} onChange={e => setName(e.target.value)} maxLength={50} />
         <div className="space-y-3">
           <label className="block text-sm font-medium text-slate-700">问题列表</label>
           {questions.map((q, idx) => (
             <div key={idx} className="flex gap-2">
-              <Input placeholder={`问题 ${idx + 1}`} value={q} onChange={e => updateQuestion(idx, e.target.value)} />
+              <Input placeholder={`问题 ${idx + 1}`} value={q} onChange={e => updateQuestion(idx, e.target.value)} maxLength={100} />
               {questions.length > 1 && (
                  <button onClick={() => removeQuestion(idx)} className="text-red-400 hover:text-red-600 px-2"><X size={18}/></button>
               )}
@@ -405,7 +408,11 @@ const HistoryCard: React.FC<{ review: Review }> = ({ review }) => {
   const [expanded, setExpanded] = useState(false);
   return (
     <div className="bg-white/80 backdrop-blur rounded-2xl border border-white/60 shadow-sm overflow-hidden transition-all hover:shadow-md">
-      <div className="p-5 flex justify-between items-start cursor-pointer" onClick={() => setExpanded(!expanded)}>
+      <button 
+        className="w-full text-left p-5 flex justify-between items-start cursor-pointer focus:outline-none focus:bg-white/60" 
+        onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
+      >
         <div>
           <div className="flex items-center gap-2 mb-1">
              <span className="font-bold text-lg text-slate-800">{review.date}</span>
@@ -414,7 +421,7 @@ const HistoryCard: React.FC<{ review: Review }> = ({ review }) => {
           <div className="text-xs text-slate-400">{new Date(review.createdAt).toLocaleTimeString()} · 已记录</div>
         </div>
         {expanded ? <ChevronDown size={20} className="text-slate-400"/> : <ChevronRight size={20} className="text-slate-400"/>}
-      </div>
+      </button>
       {review.aiSummary && (
         <div className="px-5 pb-5 pt-0">
           <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-100/50 relative">
